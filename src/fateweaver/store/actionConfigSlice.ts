@@ -21,30 +21,37 @@ interface ActionConfigState {
   protagonistScope: Record<ProtagonistActionId, Array<LocationId | CharacterId>>;
 }
 
-// Initial counts for 剧作家
 const initialMastermindConfig: Record<MastermindActionId, number> =
   ALL_MASTERMIND_ACTIONS.reduce((acc, id) => {
-    acc[id] = id === 'GainParanoia' ? 2 : 1;
+    acc[id] = (id === 'GainParanoia' || id === 'UselessLocationCover') ? 2 : 1;
     return acc;
   }, {} as Record<MastermindActionId, number>);
 
-// Initial counts for 主人公
 const initialProtagonistConfig: Record<ProtagonistActionId, number> =
   ALL_PROTAGONIST_ACTIONS.reduce((acc, id) => {
     acc[id] = id === 'ForbidIntrigue' ? 1 : 3;
     return acc;
   }, {} as Record<ProtagonistActionId, number>);
 
-// Initial scopes: 剧作家 全部地点
+// 剧作家 初始作用范围：
+// “地点伪装”、“密谋 +1”、“密谋 +2” 可以预选所有地点，其它行动留空
 const initialScopeMastermind: Record<
   MastermindActionId,
   Array<LocationId | CharacterId>
 > = ALL_MASTERMIND_ACTIONS.reduce((acc, id) => {
-  acc[id] = [...ALL_LOCATIONS];
+  if (
+    id === 'UselessLocationCover' ||
+    id === 'GainIntrigue' ||
+    id === 'GainIntrigue2'
+  ) {
+    acc[id] = [...ALL_LOCATIONS];
+  } else {
+    acc[id] = [];
+  }
   return acc;
 }, {} as Record<MastermindActionId, Array<LocationId | CharacterId>>);
 
-// Initial scopes: 主人公 只有 “禁止密谋” 选中全部地点，其它行动地点列为空
+// 主人公 部分保持不变
 const initialScopeProtagonist: Record<
   ProtagonistActionId,
   Array<LocationId | CharacterId>
@@ -67,11 +74,23 @@ const actionConfigSlice = createSlice({
     toggleMastermindAction(state, action: PayloadAction<MastermindActionId>) {
       const id = action.payload;
       if (id === 'GainParanoia') return;
-      state.mastermindConfig[id] = state.mastermindConfig[id] === 1 ? 0 : 1;
+      state.mastermindConfig[id] =
+        state.mastermindConfig[id] === 1 ? 0 : 1;
     },
     setGainParanoiaCount(state, action: PayloadAction<number>) {
       const count = action.payload;
-      state.mastermindConfig['GainParanoia'] = Math.max(0, Math.min(2, count));
+      state.mastermindConfig['GainParanoia'] = Math.max(
+        0,
+        Math.min(2, count)
+      );
+    },
+    // 新增：地点伪装数量
+    setUselessLocationCoverCount(state, action: PayloadAction<number>) {
+      const count = action.payload;
+      state.mastermindConfig['UselessLocationCover'] = Math.max(
+        0,
+        Math.min(2, count)
+      );
     },
     setProtagonistActionCount(
       state,
@@ -79,7 +98,10 @@ const actionConfigSlice = createSlice({
     ) {
       const { actionId, count } = action.payload;
       const max = actionId === 'ForbidIntrigue' ? 1 : 3;
-      state.protagonistConfig[actionId] = Math.max(0, Math.min(max, count));
+      state.protagonistConfig[actionId] = Math.max(
+        0,
+        Math.min(max, count)
+      );
     },
     setMastermindScope(
       state,
@@ -103,32 +125,30 @@ const actionConfigSlice = createSlice({
     },
   },
   extraReducers: builder => {
-    // When a character is added, include it in all scopes by default
     builder.addCase(addCharacter, (state, action) => {
       const charId = action.payload.characterId;
       ALL_MASTERMIND_ACTIONS.forEach(id => {
-        if (!state.mastermindScope[id].includes(charId)) {
-          state.mastermindScope[id].push(charId);
+        if (id !== 'UselessLocationCover') {
+          const arr = state.mastermindScope[id];
+          if (!arr.includes(charId)) arr.push(charId);
         }
       });
       ALL_PROTAGONIST_ACTIONS.forEach(id => {
-        if (!state.protagonistScope[id].includes(charId)) {
-          state.protagonistScope[id].push(charId);
-        }
+        const arr = state.protagonistScope[id];
+        if (!arr.includes(charId)) arr.push(charId);
       });
     });
-    // When a character is removed, remove it from all scopes
     builder.addCase(removeCharacter, (state, action) => {
       const removed = action.payload.characterId;
       ALL_MASTERMIND_ACTIONS.forEach(id => {
-        state.mastermindScope[id] = state.mastermindScope[id].filter(
-          t => t !== removed
-        );
+        state.mastermindScope[id] = state.mastermindScope[
+          id
+        ].filter(t => t !== removed);
       });
       ALL_PROTAGONIST_ACTIONS.forEach(id => {
-        state.protagonistScope[id] = state.protagonistScope[id].filter(
-          t => t !== removed
-        );
+        state.protagonistScope[id] = state.protagonistScope[
+          id
+        ].filter(t => t !== removed);
       });
     });
   },
@@ -137,6 +157,7 @@ const actionConfigSlice = createSlice({
 export const {
   toggleMastermindAction,
   setGainParanoiaCount,
+  setUselessLocationCoverCount,
   setProtagonistActionCount,
   setMastermindScope,
   setProtagonistScope,

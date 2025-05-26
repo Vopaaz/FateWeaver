@@ -7,18 +7,20 @@ export type MastermindActionId =
   | "ForbidParanoia"
   | "ForbidGoodwill"
   | "GainIntrigue"
-  | "GainIntrigue2";
+  | "GainIntrigue2"
+  | "UselessLocationCover";
 
 export const MASTERMIND_ACTIONS_I18N: Record<MastermindActionId, string> = {
+  GainIntrigue2:  "密谋 +2",
+  GainIntrigue:   "密谋 +1",
+  UselessLocationCover: "地点伪装",
+  DiagonalMove:   "斜向移动",
   VerticalMove:   "↑↓ 移动",
   HorizontalMove: "←→ 移动",
-  DiagonalMove:   "斜向移动",
   GainParanoia:   "不安 +1",
   LoseParanoia:   "不安 -1",
   ForbidParanoia: "禁止不安",
   ForbidGoodwill: "禁止友好",
-  GainIntrigue:   "密谋 +1",
-  GainIntrigue2:  "密谋 +2",
 };
 
 export const ALL_MASTERMIND_ACTIONS: MastermindActionId[] =
