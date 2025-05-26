@@ -1,61 +1,70 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
-import {
-  DragDropContext,
-  Droppable,
-  Draggable,
-  DropResult,
-} from '@hello-pangea/dnd';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { RootState, AppDispatch } from '../store/store';
-import { addItem, removeItem, moveItem } from '../store/boardSlice';
-
-// Pre-defined constant items
-const ALL_ITEMS = ['Item A', 'Item B', 'Item C', 'Item D', 'Item E', 'Item F'];
-const BOX_IDS = ['hospital', 'shrine', 'city', 'school'];
-const BOX_LABELS: Record<string, string> = {
-  hospital: 'Hospital',
-  shrine: 'Shrine',
-  city: 'City',
-  school: 'School',
-};
+import { addCharacter, removeCharacter, moveCharacter } from '../store/boardSlice';
+import { ALL_CHARACTERS, ALL_LOCATIONS, CHARACTERS_I18N, LOCATIONS_I18N } from '../constants';
+import { CharacterId, LocationId } from '../constants';
+// Pinyin conversion
+import TinyPinyin from 'tiny-pinyin';
 
 interface Props {
-  boxes: Record<string, string[]>;
-  addItem: (payload: { boxId: string; itemId: string }) => void;
-  removeItem: (payload: { boxId: string; itemId: string }) => void;
-  moveItem: (payload: {
-    sourceBoxId: string;
-    destinationBoxId: string;
+  locations: Record<LocationId, CharacterId[]>;
+  addCharacter: (payload: { locationId: LocationId; characterId: CharacterId }) => void;
+  removeCharacter: (payload: { locationId: LocationId; characterId: CharacterId }) => void;
+  moveCharacter: (payload: {
+    sourceLocationId: LocationId;
+    destinationLocationId: LocationId;
     sourceIndex: number;
     destinationIndex: number;
   }) => void;
 }
 
-class CurrentBoard extends Component<Props> {
-  // Arrow methods autobind `this`
+interface State {
+  searchQuery: Partial<Record<LocationId, string>>;
+}
+
+class CurrentBoard extends Component<Props, State> {
+  constructor(props: Props) {
+    super(props);
+    this.state = { searchQuery: {} }; // track per-location search
+  }
+
   onDragEnd = (result: DropResult) => {
     const { source, destination } = result;
     if (!destination) return;
-    this.props.moveItem({
-      sourceBoxId: source.droppableId,
-      destinationBoxId: destination.droppableId,
+    this.props.moveCharacter({
+      sourceLocationId: source.droppableId as LocationId,
+      destinationLocationId: destination.droppableId as LocationId,
       sourceIndex: source.index,
       destinationIndex: destination.index,
     });
   };
 
-  handleAdd = (boxId: string, e: React.ChangeEvent<HTMLSelectElement>) => {
-    const itemId = e.target.value;
-    if (itemId) {
-      this.props.addItem({ boxId, itemId });
+  handleSearch = (locationId: LocationId, e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    this.setState((prev) => ({
+      searchQuery: { ...prev.searchQuery, [locationId]: value },
+    }));
+  };
+
+  handleAdd = (locationId: LocationId, e: React.ChangeEvent<HTMLSelectElement>) => {
+    const characterId = e.target.value as CharacterId;
+    if (characterId) {
+      this.props.addCharacter({ locationId, characterId });
       e.target.value = '';
+      // clear search after select
+      this.setState((prev) => ({
+        searchQuery: { ...prev.searchQuery, [locationId]: '' },
+      }));
     }
   };
 
   render() {
-    const selected = new Set<string>();
-    BOX_IDS.forEach((id) =>
-      this.props.boxes[id].forEach((item) => selected.add(item))
+    const { locations } = this.props;
+    const selected = new Set<CharacterId>();
+    ALL_LOCATIONS.forEach((loc) =>
+      locations[loc].forEach((char) => selected.add(char))
     );
 
     return (
@@ -63,70 +72,94 @@ class CurrentBoard extends Component<Props> {
         <h2 className="mb-4 text-center">当前局面</h2>
         <DragDropContext onDragEnd={this.onDragEnd}>
           <div className="row row-cols-1 row-cols-md-2 g-4">
-            {BOX_IDS.map((boxId) => (
-              <div key={boxId} className="col">
-                <div className="card h-100 shadow-sm">
-                  <div className="card-header bg-light fs-5">{BOX_LABELS[boxId]}</div>
-                  <div className="card-body">
-                    <div className="mb-3">
-                      <select
-                        className="form-select"
-                        onChange={(e) => this.handleAdd(boxId, e)}
-                        defaultValue=""
-                      >
-                        <option value="" disabled>
-                          添加项目
-                        </option>
-                        {ALL_ITEMS.filter((item) => !selected.has(item)).map(
-                          (item) => (
-                            <option key={item} value={item}>
-                              {item}
-                            </option>
-                          )
-                        )}
-                      </select>
+            {ALL_LOCATIONS.map((locationId) => {
+              const query = this.state.searchQuery[locationId] ?? '';
+              const lowerQuery = query.toLowerCase();
+              const options = ALL_CHARACTERS.filter(
+                (c) => {
+                  if (selected.has(c)) return false;
+                  const name = CHARACTERS_I18N[c];
+                  const pinyin = TinyPinyin.convertToPinyin(name, '', true).toLowerCase();
+                  return name.toLowerCase().includes(lowerQuery) ||
+                         c.toLowerCase().includes(lowerQuery) ||
+                         pinyin.includes(lowerQuery);
+                }
+              );
+
+              return (
+                <div key={locationId} className="col">
+                  <div className="card h-100 shadow-sm">
+                    <div className="card-header bg-light fs-5">
+                      {LOCATIONS_I18N[locationId]}
                     </div>
-                    <Droppable droppableId={boxId}>
-                      {(provided) => (
-                        <ul
-                          className="list-group list-group-flush"
-                          ref={provided.innerRef}
-                          {...provided.droppableProps}
+                    <div className="card-body">
+                      <div className="mb-2">
+                        <input
+                          type="text"
+                          className="form-control"
+                          placeholder="搜索角色"
+                          value={query}
+                          onChange={(e) => this.handleSearch(locationId, e)}
+                        />
+                      </div>
+                      <div className="mb-3">
+                        <select
+                          className="form-select"
+                          onChange={(e) => this.handleAdd(locationId, e)}
+                          defaultValue=""
                         >
-                          {this.props.boxes[boxId].map((item, index) => (
-                            <Draggable
-                              key={item}
-                              draggableId={item}
-                              index={index}
-                            >
-                              {(prov) => (
-                                <li
-                                  className="list-group-item d-flex justify-content-between align-items-center"
-                                  ref={prov.innerRef}
-                                  {...prov.draggableProps}
-                                  {...prov.dragHandleProps}
-                                >
-                                  <span>{item}</span>
-                                  <button
-                                    className="btn btn-sm btn-outline-danger"
-                                    onClick={() =>
-                                      this.props.removeItem({ boxId, itemId: item })
-                                    }
-                                  >
-                                    删除
-                                  </button>
-                                </li>
-                              )}
-                            </Draggable>
+                          <option value="" disabled>
+                            添加角色
+                          </option>
+                          {options.map((c) => (
+                            <option key={c} value={c}>
+                              {CHARACTERS_I18N[c]}
+                            </option>
                           ))}
-                          {provided.placeholder}
-                        </ul>
-                      )}
-                    </Droppable>
+                        </select>
+                      </div>
+                      <Droppable droppableId={locationId}>
+                        {(provided) => (
+                          <ul
+                            className="list-group list-group-flush"
+                            ref={provided.innerRef}
+                            {...provided.droppableProps}
+                          >
+                            {locations[locationId].map((characterId, index) => (
+                              <Draggable
+                                key={characterId}
+                                draggableId={characterId}
+                                index={index}
+                              >
+                                {(prov) => (
+                                  <li
+                                    className="list-group-item d-flex justify-content-between align-items-center"
+                                    ref={prov.innerRef}
+                                    {...prov.draggableProps}
+                                    {...prov.dragHandleProps}
+                                  >
+                                    <span>{CHARACTERS_I18N[characterId]}</span>
+                                    <button
+                                      className="btn btn-sm btn-outline-danger"
+                                      onClick={() =>
+                                        this.props.removeCharacter({ locationId, characterId })
+                                      }
+                                    >
+                                      删除
+                                    </button>
+                                  </li>
+                                )}
+                              </Draggable>
+                            ))}
+                            {provided.placeholder}
+                          </ul>
+                        )}
+                      </Droppable>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </DragDropContext>
       </div>
@@ -135,19 +168,19 @@ class CurrentBoard extends Component<Props> {
 }
 
 const mapStateToProps = (state: RootState) => ({
-  boxes: state.board.boxes,
+  locations: state.board.locations,
 });
 const mapDispatchToProps = (dispatch: AppDispatch) => ({
-  addItem: (payload: { boxId: string; itemId: string }) =>
-    dispatch(addItem(payload)),
-  removeItem: (payload: { boxId: string; itemId: string }) =>
-    dispatch(removeItem(payload)),
-  moveItem: (payload: {
-    sourceBoxId: string;
-    destinationBoxId: string;
+  addCharacter: (payload: { locationId: LocationId; characterId: CharacterId }) =>
+    dispatch(addCharacter(payload)),
+  removeCharacter: (payload: { locationId: LocationId; characterId: CharacterId }) =>
+    dispatch(removeCharacter(payload)),
+  moveCharacter: (payload: {
+    sourceLocationId: LocationId;
+    destinationLocationId: LocationId;
     sourceIndex: number;
     destinationIndex: number;
-  }) => dispatch(moveItem(payload)),
+  }) => dispatch(moveCharacter(payload)),
 });
 
 export default connect(mapStateToProps, mapDispatchToProps)(CurrentBoard);

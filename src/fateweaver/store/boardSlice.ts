@@ -1,15 +1,16 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { CharacterId, LocationId } from '../constants';
 
 export interface BoardState {
-  boxes: Record<string, string[]>;
+  locations: Record<LocationId, CharacterId[]>;
 }
 
 const initialState: BoardState = {
-  boxes: {
-    hospital: [],
-    shrine: [],
-    city: [],
-    school: [],
+  locations: {
+    Hospital: [],
+    Shrine: [],
+    City: [],
+    School: [],
   },
 };
 
@@ -17,31 +18,44 @@ const boardSlice = createSlice({
   name: 'board',
   initialState,
   reducers: {
-    addItem(state, action: PayloadAction<{ boxId: string; itemId: string }>) {
-      const { boxId, itemId } = action.payload;
-      if (!state.boxes[boxId].includes(itemId)) {
-        state.boxes[boxId].push(itemId);
+    addCharacter(
+      state,
+      action: PayloadAction<{ locationId: LocationId; characterId: CharacterId }>
+    ) {
+      const { locationId, characterId } = action.payload;
+      if (!state.locations[locationId].includes(characterId)) {
+        state.locations[locationId].push(characterId);
       }
     },
-    removeItem(state, action: PayloadAction<{ boxId: string; itemId: string }>) {
-      const { boxId, itemId } = action.payload;
-      state.boxes[boxId] = state.boxes[boxId].filter((id) => id !== itemId);
+    removeCharacter(
+      state,
+      action: PayloadAction<{ locationId: LocationId; characterId: CharacterId }>
+    ) {
+      const { locationId, characterId } = action.payload;
+      state.locations[locationId] = state.locations[locationId].filter(
+        (id) => id !== characterId
+      );
     },
-    moveItem(
+    moveCharacter(
       state,
       action: PayloadAction<{
-        sourceBoxId: string;
-        destinationBoxId: string;
+        sourceLocationId: LocationId;
+        destinationLocationId: LocationId;
         sourceIndex: number;
         destinationIndex: number;
       }>
     ) {
-      const { sourceBoxId, destinationBoxId, sourceIndex, destinationIndex } = action.payload;
-      const [moved] = state.boxes[sourceBoxId].splice(sourceIndex, 1);
-      state.boxes[destinationBoxId].splice(destinationIndex, 0, moved);
+      const {
+        sourceLocationId,
+        destinationLocationId,
+        sourceIndex,
+        destinationIndex,
+      } = action.payload;
+      const [moved] = state.locations[sourceLocationId].splice(sourceIndex, 1);
+      state.locations[destinationLocationId].splice(destinationIndex, 0, moved);
     },
   },
 });
 
-export const { addItem, removeItem, moveItem } = boardSlice.actions;
+export const { addCharacter, removeCharacter, moveCharacter } = boardSlice.actions;
 export default boardSlice.reducer;
