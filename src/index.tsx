@@ -6,6 +6,8 @@ import reportWebVitals from "./reportWebVitals";
 
 import { Provider } from "react-redux";
 import { store } from "./fateweaver/store/store";
+import 'bootstrap/dist/css/bootstrap.min.css';
+
 
 const container = document.getElementById("root");
 if (!container) {

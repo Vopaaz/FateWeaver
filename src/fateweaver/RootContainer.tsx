@@ -1,24 +1,15 @@
-import React, { Component, ReactNode } from 'react';
+import React, { Component } from 'react';
+import CurrentBoard from './components/CurrentBoard';
 
-interface RootContainerProps {
-  children?: ReactNode;
-}
-
-interface RootContainerState {}
-
-export default class RootContainer extends Component<RootContainerProps, RootContainerState> {
-  constructor(props: RootContainerProps) {
-    super(props);
-    this.state = {};
-  }
-
+export default class RootContainer extends Component {
   render() {
     return (
-      <div className="App">
-        <header className="App-header">
-          123
-          {this.props.children}
-        </header>
+      <div className="container mt-5">
+        <div className="row justify-content-center">
+          <div className="col-12">
+            <CurrentBoard />
+          </div>
+        </div>
       </div>
     );
   }
