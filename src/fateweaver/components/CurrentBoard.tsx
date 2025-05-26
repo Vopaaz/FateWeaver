@@ -55,17 +55,17 @@ class CurrentBoard extends Component<Props, State> {
     });
   };
 
-  handleSearch = (locationId: LocationId, value: string) => {
-    this.setState(prev => ({
-      searchQuery: { ...prev.searchQuery, [locationId]: value }
-    }));
+  handleSearch = (locationId: LocationId, e: React.ChangeEvent<HTMLInputElement>) => {
+    this.setState({ searchQuery: { ...this.state.searchQuery, [locationId]: e.target.value } });
   };
 
-  handleAdd = (locationId: LocationId, characterId: CharacterId) => {
-    this.props.addCharacter({ locationId, characterId });
-    this.setState(prev => ({
-      searchQuery: { ...prev.searchQuery, [locationId]: '' }
-    }));
+  handleAdd = (locationId: LocationId, e: React.ChangeEvent<HTMLSelectElement>) => {
+    const characterId = e.target.value as CharacterId;
+    if (characterId) {
+      this.props.addCharacter({ locationId, characterId });
+      e.target.value = '';
+      this.setState({ searchQuery: { ...this.state.searchQuery, [locationId]: '' } });
+    }
   };
 
   filterOptions(locationId: LocationId): CharacterId[] {
@@ -116,12 +116,12 @@ class CurrentBoard extends Component<Props, State> {
           className="form-control mb-3"
           placeholder="搜索角色"
           value={query}
-          onChange={e => this.handleSearch(locationId, e.target.value)}
+          onChange={e => this.handleSearch(locationId, e)}
         />
         <select
           className="form-select mb-3 text-nowrap"
           value=""
-          onChange={e => this.handleAdd(locationId, e.target.value as CharacterId)}
+          onChange={e => this.handleAdd(locationId, e)}
         >
           <option value="" disabled>添加角色</option>
           {options.map(c => (
@@ -133,7 +133,7 @@ class CurrentBoard extends Component<Props, State> {
   }
 
   renderCharacterTable(locationId: LocationId): ReactNode {
-    const { characters, intrigue } = this.props.locations[locationId];
+    const { characters } = this.props.locations[locationId];
     return (
       <Droppable droppableId={locationId}>
         {prov => (
@@ -144,7 +144,7 @@ class CurrentBoard extends Component<Props, State> {
             {...prov.droppableProps}
           >
             <thead>
-              <tr>
+              <tr className="text-center">
                 <th className="text-nowrap">角色</th>
                 <th className="text-nowrap">不安</th>
                 <th className="text-nowrap">友好</th>
@@ -161,7 +161,7 @@ class CurrentBoard extends Component<Props, State> {
                       <tr ref={p.innerRef} {...p.draggableProps}>
                         <td {...p.dragHandleProps} className="text-nowrap">{CHARACTERS_I18N[characterId]}</td>
                         {(['paranoia','goodwill','intrigue'] as StatKey[]).map(stat => (
-                          <td key={stat} className="text-nowrap p-1">
+                          <td key={stat} className="text-nowrap p-1 text-center">
                             <input
                               type="number"
                               min={0}
@@ -171,11 +171,8 @@ class CurrentBoard extends Component<Props, State> {
                             />
                           </td>
                         ))}
-                        <td className="text-nowrap p-1">
-                          <button
-                            className="btn btn-sm btn-outline-danger"
-                            onClick={() => this.props.removeCharacter({ locationId, characterId })}
-                          >删除</button>
+                        <td className="text-nowrap p-1 text-center">
+                          <button className="btn btn-sm btn-outline-danger" onClick={() => this.props.removeCharacter({ locationId, characterId })}>删除</button>
                         </td>
                       </tr>
                     )}
@@ -193,7 +190,7 @@ class CurrentBoard extends Component<Props, State> {
   render() {
     return (
       <div className="container py-4">
-        <h2 className="mb-4 text-center">当前局面</h2>
+        <h2 className="mb-4 text-center">当前局面（暂无禁入区域验证，请保证输入正确）</h2>
         <DragDropContext onDragEnd={this.onDragEnd}>
           <div className="row row-cols-1 row-cols-md-2 g-4">
             {ALL_LOCATIONS.map(locationId => {
