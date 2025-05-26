@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { CharacterId, LocationId, ALL_CHARACTERS } from "../constants";
+import { CharacterId, LocationId, ALL_CHARACTERS } from "../constants/board";
 
 export interface CharacterStats {
   paranoia: number;

@@ -17,7 +17,7 @@ import {
   LOCATIONS_I18N,
   CharacterId,
   LocationId,
-} from '../constants';
+} from '../constants/board';
 import TinyPinyin from 'tiny-pinyin';
 
 export type StatKey = keyof CharacterStats;
