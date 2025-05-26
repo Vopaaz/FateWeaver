@@ -1,40 +1,63 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { CharacterId, LocationId } from '../constants';
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { CharacterId, LocationId, ALL_CHARACTERS } from "../constants";
 
-export interface BoardState {
-  locations: Record<LocationId, CharacterId[]>;
+export interface CharacterStats {
+  paranoia: number;
+  goodwill: number;
+  intrigue: number;
 }
+export interface LocationStats {
+  characters: CharacterId[];
+  intrigue: number;
+}
+export interface BoardState {
+  locations: Record<LocationId, LocationStats>;
+  characterStats: Record<CharacterId, CharacterStats>;
+}
+
+const initialCharacterStats: Record<CharacterId, CharacterStats> =
+  ALL_CHARACTERS.reduce(
+    (acc, id) => ({ ...acc, [id]: { paranoia: 0, goodwill: 0, intrigue: 0 } }),
+    {} as Record<CharacterId, CharacterStats>
+  );
 
 const initialState: BoardState = {
   locations: {
-    Hospital: [],
-    Shrine: [],
-    City: [],
-    School: [],
+    Hospital: { characters: [], intrigue: 0 },
+    Shrine: { characters: [], intrigue: 0 },
+    City: { characters: [], intrigue: 0 },
+    School: { characters: [], intrigue: 0 },
   },
+  characterStats: initialCharacterStats,
 };
 
 const boardSlice = createSlice({
-  name: 'board',
+  name: "board",
   initialState,
   reducers: {
     addCharacter(
       state,
-      action: PayloadAction<{ locationId: LocationId; characterId: CharacterId }>
+      action: PayloadAction<{
+        locationId: LocationId;
+        characterId: CharacterId;
+      }>
     ) {
       const { locationId, characterId } = action.payload;
-      if (!state.locations[locationId].includes(characterId)) {
-        state.locations[locationId].push(characterId);
+      if (!state.locations[locationId].characters.includes(characterId)) {
+        state.locations[locationId].characters.push(characterId);
       }
     },
     removeCharacter(
       state,
-      action: PayloadAction<{ locationId: LocationId; characterId: CharacterId }>
+      action: PayloadAction<{
+        locationId: LocationId;
+        characterId: CharacterId;
+      }>
     ) {
       const { locationId, characterId } = action.payload;
-      state.locations[locationId] = state.locations[locationId].filter(
-        (id) => id !== characterId
-      );
+      state.locations[locationId].characters = state.locations[
+        locationId
+      ].characters.filter((id) => id !== characterId);
     },
     moveCharacter(
       state,
@@ -51,11 +74,61 @@ const boardSlice = createSlice({
         sourceIndex,
         destinationIndex,
       } = action.payload;
-      const [moved] = state.locations[sourceLocationId].splice(sourceIndex, 1);
-      state.locations[destinationLocationId].splice(destinationIndex, 0, moved);
+      const [moved] = state.locations[sourceLocationId].characters.splice(
+        sourceIndex,
+        1
+      );
+      state.locations[destinationLocationId].characters.splice(
+        destinationIndex,
+        0,
+        moved
+      );
+    },
+    setCharacterStat(
+      state,
+      action: PayloadAction<{
+        characterId: CharacterId;
+        stat: keyof CharacterStats;
+        value: number;
+      }>
+    ) {
+      const { characterId, stat, value } = action.payload;
+      state.characterStats[characterId][stat] = Math.max(0, value);
+    },
+    setLocationIntrigue(
+      state,
+      action: PayloadAction<{ locationId: LocationId; value: number }>
+    ) {
+      const { locationId, value } = action.payload;
+      state.locations[locationId].intrigue = Math.max(0, value);
+    },
+    incrementLocationIntrigue(
+      state,
+      action: PayloadAction<{ locationId: LocationId }>
+    ) {
+      const { locationId } = action.payload;
+      state.locations[locationId].intrigue++;
+    },
+    decrementLocationIntrigue(
+      state,
+      action: PayloadAction<{ locationId: LocationId }>
+    ) {
+      const { locationId } = action.payload;
+      state.locations[locationId].intrigue = Math.max(
+        0,
+        state.locations[locationId].intrigue - 1
+      );
     },
   },
 });
 
-export const { addCharacter, removeCharacter, moveCharacter } = boardSlice.actions;
+export const {
+  addCharacter,
+  removeCharacter,
+  moveCharacter,
+  setCharacterStat,
+  setLocationIntrigue,
+  incrementLocationIntrigue,
+  decrementLocationIntrigue,
+} = boardSlice.actions;
 export default boardSlice.reducer;
