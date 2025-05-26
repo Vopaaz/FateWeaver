@@ -1,15 +1,15 @@
 {
   "files": {
     "main.css": "/FateWeaver/static/css/main.9d0934b1.css",
-    "main.js": "/FateWeaver/static/js/main.1c92d7ac.js",
+    "main.js": "/FateWeaver/static/js/main.c6485b6b.js",
     "static/js/453.df629dec.chunk.js": "/FateWeaver/static/js/453.df629dec.chunk.js",
     "index.html": "/FateWeaver/index.html",
     "main.9d0934b1.css.map": "/FateWeaver/static/css/main.9d0934b1.css.map",
-    "main.1c92d7ac.js.map": "/FateWeaver/static/js/main.1c92d7ac.js.map",
+    "main.c6485b6b.js.map": "/FateWeaver/static/js/main.c6485b6b.js.map",
     "453.df629dec.chunk.js.map": "/FateWeaver/static/js/453.df629dec.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.9d0934b1.css",
-    "static/js/main.1c92d7ac.js"
+    "static/js/main.c6485b6b.js"
   ]
 }
