@@ -14,7 +14,7 @@ export const MASTERMIND_ACTIONS_I18N: Record<MastermindActionId, string> = {
   HorizontalMove: "←→ 移动",
   DiagonalMove:   "斜向移动",
   GainParanoia:   "不安 +1",
-  LoseParanoia:   "失去 -1",
+  LoseParanoia:   "不安 -1",
   ForbidParanoia: "禁止不安",
   ForbidGoodwill: "禁止友好",
   GainIntrigue:   "密谋 +1",
