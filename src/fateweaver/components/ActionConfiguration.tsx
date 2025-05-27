@@ -173,7 +173,6 @@ class ActionConfiguration extends Component<Props> {
 
   render() {
     const {
-      locationsState,
       mastermindConfig,
       protagonistConfig,
       mastermindScope,

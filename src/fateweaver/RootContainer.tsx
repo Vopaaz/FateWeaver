@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import CurrentBoard from './components/CurrentBoard';
 import ActionConfiguration from './components/ActionConfiguration';
+import PermutationEstimation from './components/PermutationEstimation';
 
 export default class RootContainer extends Component {
   render() {
@@ -10,6 +11,7 @@ export default class RootContainer extends Component {
           <div className="col-12">
             <CurrentBoard />
             <ActionConfiguration />
+            <PermutationEstimation />
           </div>
         </div>
       </div>
