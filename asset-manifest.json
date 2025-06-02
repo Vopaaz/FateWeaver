@@ -1,15 +1,19 @@
 {
   "files": {
     "main.css": "/FateWeaver/static/css/main.9d0934b1.css",
-    "main.js": "/FateWeaver/static/js/main.a9024edf.js",
+    "main.js": "/FateWeaver/static/js/main.6a3e6216.js",
+    "static/js/402.d74b40e8.chunk.js": "/FateWeaver/static/js/402.d74b40e8.chunk.js",
+    "static/js/21.d74b40e8.chunk.js": "/FateWeaver/static/js/21.d74b40e8.chunk.js",
     "static/js/453.df629dec.chunk.js": "/FateWeaver/static/js/453.df629dec.chunk.js",
     "index.html": "/FateWeaver/index.html",
     "main.9d0934b1.css.map": "/FateWeaver/static/css/main.9d0934b1.css.map",
-    "main.a9024edf.js.map": "/FateWeaver/static/js/main.a9024edf.js.map",
+    "main.6a3e6216.js.map": "/FateWeaver/static/js/main.6a3e6216.js.map",
+    "402.d74b40e8.chunk.js.map": "/FateWeaver/static/js/402.d74b40e8.chunk.js.map",
+    "21.d74b40e8.chunk.js.map": "/FateWeaver/static/js/21.d74b40e8.chunk.js.map",
     "453.df629dec.chunk.js.map": "/FateWeaver/static/js/453.df629dec.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.9d0934b1.css",
-    "static/js/main.a9024edf.js"
+    "static/js/main.6a3e6216.js"
   ]
 }
