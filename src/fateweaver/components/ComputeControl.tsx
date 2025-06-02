@@ -14,12 +14,14 @@ import {
   selectComputeStartTime,
   selectComputeCanceled,
 } from "../store/computeSlice";
-import {
-  MastermindActionId,
-  ALL_MASTERMIND_ACTIONS,
-  ProtagonistActionId,
-} from "../constants/actions";
+import { MastermindActionId, ProtagonistActionId } from "../constants/actions";
 import { LocationId, CharacterId } from "../constants/board";
+
+// 从 computeSlice 中导入对应的接口类型
+import {
+  MastermindStatEntry,
+  ProtagonistStatEntry,
+} from "../store/computeSlice";
 
 // 使用 TypeScript 的 Worker 导入写法（CRA/webpack 支持）：
 const ComputeWorker = new Worker(
@@ -44,8 +46,13 @@ interface Props {
   dispatchStart: (total: number) => void;
   dispatchCancel: () => void;
   dispatchIncrementProgress: (n: number) => void;
-  dispatchMergeMastermind: (stats: Record<MastermindActionId, any>) => void;
-  dispatchMergeProtagonist: (stats: Record<ProtagonistActionId, any>) => void;
+  // 明确指定合并统计时的类型
+  dispatchMergeMastermind: (
+    stats: Record<MastermindActionId, MastermindStatEntry>
+  ) => void;
+  dispatchMergeProtagonist: (
+    stats: Record<ProtagonistActionId, ProtagonistStatEntry>
+  ) => void;
   dispatchFinish: () => void;
 }
 
@@ -101,7 +108,14 @@ class ComputeControl extends Component<Props> {
   onWorkerMessage(ev: MessageEvent) {
     const data = ev.data as
       | { type: "progress"; processed: number }
-      | { type: "done"; localMastermindStats: any; localProtagonistStats: any }
+      | {
+          type: "done";
+          localMastermindStats: Record<MastermindActionId, MastermindStatEntry>;
+          localProtagonistStats: Record<
+            ProtagonistActionId,
+            ProtagonistStatEntry
+          >;
+        }
       | { type: "aborted" };
 
     if (data.type === "progress") {
@@ -141,7 +155,7 @@ class ComputeControl extends Component<Props> {
 
     // 1) 先算出所有 “剧作家分布” 列表，共计 M 条
     const allDistributions = generateDistributions(
-      ALL_MASTERMIND_ACTIONS,
+      Object.keys(mastermindConfig) as MastermindActionId[],
       mastermindConfig,
       3
     );
@@ -216,7 +230,6 @@ class ComputeControl extends Component<Props> {
       <div className="container py-4">
         <h5 className="mb-3 text-center">计算控制台</h5>
         {/* 进度条 */}
-
         <div className="progress mb-2" style={{ height: "1.5rem" }}>
           <div
             className="progress-bar"
@@ -274,10 +287,12 @@ const mapDispatchToProps = (dispatch: AppDispatch) => ({
   dispatchStart: (total: number) => dispatch(startCompute({ total })),
   dispatchCancel: () => dispatch(cancelCompute()),
   dispatchIncrementProgress: (n: number) => dispatch(incrementProgressBy(n)),
-  dispatchMergeMastermind: (stats: Record<MastermindActionId, any>) =>
-    dispatch(mergeMastermindStats(stats)),
-  dispatchMergeProtagonist: (stats: Record<ProtagonistActionId, any>) =>
-    dispatch(mergeProtagonistStats(stats)),
+  dispatchMergeMastermind: (
+    stats: Record<MastermindActionId, MastermindStatEntry>
+  ) => dispatch(mergeMastermindStats(stats)),
+  dispatchMergeProtagonist: (
+    stats: Record<ProtagonistActionId, ProtagonistStatEntry>
+  ) => dispatch(mergeProtagonistStats(stats)),
   dispatchFinish: () => dispatch(finishCompute()),
 });
 

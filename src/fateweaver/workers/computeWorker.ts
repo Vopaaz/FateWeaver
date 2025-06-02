@@ -3,28 +3,14 @@ import {
   ALL_MASTERMIND_ACTIONS,
   ProtagonistActionId,
   ALL_PROTAGONIST_ACTIONS,
-} from '../constants/actions';
-import { LocationId, CharacterId, ALL_LOCATIONS } from '../constants/board';
+} from "../constants/actions";
+import { LocationId, CharacterId, ALL_LOCATIONS } from "../constants/board";
+import {
+  MastermindStatEntry,
+  ProtagonistStatEntry,
+} from "../store/computeSlice";
 
 export type Target = LocationId | CharacterId;
-
-export interface MastermindStatEntry {
-  count: number;
-  sum: number;
-  bestValue: number;
-  bestProtagPlacement: Record<ProtagonistActionId, Target[]>;
-  worstValue: number;
-  worstProtagPlacement: Record<ProtagonistActionId, Target[]>;
-}
-
-export interface ProtagonistStatEntry {
-  count: number;
-  sum: number;
-  bestValue: number;
-  bestMasterPlacement: Record<MastermindActionId, Target[]>;
-  worstValue: number;
-  worstMasterPlacement: Record<MastermindActionId, Target[]>;
-}
 
 interface LocalStats {
   mastermindStats: Record<MastermindActionId, MastermindStatEntry>;
@@ -33,7 +19,7 @@ interface LocalStats {
 }
 
 interface StartMessage {
-  type: 'start';
+  type: "start";
   sliceDistributions: Array<Record<MastermindActionId, number>>;
   protagonistConfig: Record<ProtagonistActionId, number>;
   mastermindScope: Record<MastermindActionId, Target[]>;
@@ -41,12 +27,12 @@ interface StartMessage {
 }
 
 interface ProgressMessage {
-  type: 'progress';
+  type: "progress";
   processed: number;
 }
 
 interface DoneMessage {
-  type: 'done';
+  type: "done";
   localMastermindStats: Record<MastermindActionId, MastermindStatEntry>;
   localProtagonistStats: Record<ProtagonistActionId, ProtagonistStatEntry>;
 }
@@ -54,6 +40,7 @@ interface DoneMessage {
 let canceledFlag = false;
 let localStats: LocalStats;
 
+/** 初始化空的 Mastermind 统计 */
 function makeEmptyMastermindStats(): Record<MastermindActionId, MastermindStatEntry> {
   const o = {} as Record<MastermindActionId, MastermindStatEntry>;
   ALL_MASTERMIND_ACTIONS.forEach((aid) => {
@@ -69,6 +56,7 @@ function makeEmptyMastermindStats(): Record<MastermindActionId, MastermindStatEn
   return o;
 }
 
+/** 初始化空的 Protagonist 统计 */
 function makeEmptyProtagonistStats(): Record<ProtagonistActionId, ProtagonistStatEntry> {
   const o = {} as Record<ProtagonistActionId, ProtagonistStatEntry>;
   ALL_PROTAGONIST_ACTIONS.forEach((aid) => {
@@ -84,6 +72,7 @@ function makeEmptyProtagonistStats(): Record<ProtagonistActionId, ProtagonistSta
   return o;
 }
 
+/** 从数组里选 k 个元素的所有组合 */
 function combinations<T>(arr: T[], k: number): T[][] {
   if (k === 0) return [[]];
   if (arr.length < k) return [];
@@ -93,6 +82,7 @@ function combinations<T>(arr: T[], k: number): T[][] {
   return [...withFirst, ...withoutFirst];
 }
 
+/** 生成恰好 sum 张卡在 actions 各自上限内的所有分布 */
 function generateDistributions<T extends string>(
   actions: T[],
   config: Record<T, number>,
@@ -123,10 +113,15 @@ class ComputeEngine {
     mastermindPlacement: Record<MastermindActionId, Target[]>;
     protagonistPlacement: Record<ProtagonistActionId, Target[]>;
   }): Promise<number> {
+    // 在此调用真实的“效用值”计算逻辑
     return 0;
   }
 }
 
+/**
+ * 处理单个 Mastermind 分布 dist：
+ *   - 递归枚举具体放置，并更新 localStats
+ */
 async function handleOneMasterDist(
   dist: Record<MastermindActionId, number>,
   protagonistConfig: Record<ProtagonistActionId, number>,
@@ -145,6 +140,8 @@ async function handleOneMasterDist(
   const recurseMaster = async (idx: number) => {
     if (canceledFlag) return;
     if (idx === actions.length) {
+      // 所有 Mastermind 动作都已放置完毕
+      // 计算 coveredLocations
       const coveredLocations = new Set<LocationId>();
       actions.forEach((a) => {
         (placementMap[a] || []).forEach((t) => {
@@ -154,6 +151,7 @@ async function handleOneMasterDist(
         });
       });
 
+      // 构建临时的主人公作用域：剔除“未被 Mastermind 打到的地点”
       const tempProtoScope: Record<ProtagonistActionId, Target[]> = {
         ...protagonistScope,
       };
@@ -168,8 +166,8 @@ async function handleOneMasterDist(
         tempProtoScope.ForbidIntrigue = filtered;
       }
 
-      // **在此处分割循环并禁用 ESLint no-loop-func**
       /* eslint-disable no-loop-func */
+      // 枚举所有可能的 Protagonist 分布
       const protComps = generateDistributions(
         ALL_PROTAGONIST_ACTIONS,
         protagonistConfig,
@@ -187,15 +185,13 @@ async function handleOneMasterDist(
         const recurseProto = async (jdx: number) => {
           if (canceledFlag) return;
           if (jdx === pActions.length) {
-
-            // console.log("mastermind", JSON.stringify(placementMap))
-            // console.log("protagonist", JSON.stringify(pPlacementMap))
-
+            // 生成一个完整的 (placementMap, pPlacementMap) 实例
             const utilValue = await engine.compute({
               mastermindPlacement: placementMap,
               protagonistPlacement: pPlacementMap,
             });
 
+            // 在线更新 localStats.mastermindStats
             actions.forEach((ma) => {
               const stat = localStats.mastermindStats[ma];
               stat.count += 1;
@@ -214,6 +210,7 @@ async function handleOneMasterDist(
               }
             });
 
+            // 在线更新 localStats.protagonistStats
             pActions.forEach((pa) => {
               const stat2 = localStats.protagonistStats[pa];
               stat2.count += 1;
@@ -235,7 +232,7 @@ async function handleOneMasterDist(
             localStats.processedCount += 1;
             if (localStats.processedCount % 5000 === 0) {
               const msg: ProgressMessage = {
-                type: 'progress',
+                type: "progress",
                 processed: 5000,
               };
               globalThis.postMessage(msg);
@@ -260,7 +257,7 @@ async function handleOneMasterDist(
         await recurseProto(0);
       }
       /* eslint-enable no-loop-func */
-      // **循环结束**
+
       return;
     }
 
@@ -310,14 +307,14 @@ async function runWorker(
   const remainder = localStats.processedCount % 5000;
   if (remainder > 0) {
     const msg: ProgressMessage = {
-      type: 'progress',
+      type: "progress",
       processed: remainder,
     };
     globalThis.postMessage(msg);
   }
 
   const doneMsg: DoneMessage = {
-    type: 'done',
+    type: "done",
     localMastermindStats: localStats.mastermindStats,
     localProtagonistStats: localStats.protagonistStats,
   };
@@ -325,9 +322,9 @@ async function runWorker(
   globalThis.close();
 }
 
-globalThis.addEventListener('message', (ev: MessageEvent) => {
-  const data = ev.data as StartMessage | { type: 'cancel' };
-  if (data.type === 'start') {
+globalThis.addEventListener("message", (ev: MessageEvent) => {
+  const data = ev.data as StartMessage | { type: "cancel" };
+  if (data.type === "start") {
     canceledFlag = false;
     runWorker(
       data.sliceDistributions,
@@ -335,7 +332,7 @@ globalThis.addEventListener('message', (ev: MessageEvent) => {
       data.mastermindScope,
       data.protagonistScope
     );
-  } else if (data.type === 'cancel') {
+  } else if (data.type === "cancel") {
     canceledFlag = true;
   }
 });
