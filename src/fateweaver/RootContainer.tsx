@@ -3,6 +3,7 @@ import CurrentBoard from './components/CurrentBoard';
 import ActionConfiguration from './components/ActionConfiguration';
 import PermutationEstimation from './components/PermutationEstimation';
 import ComputeControl from './components/ComputeControl';
+import UtilityDefinition from './components/UtilityDefinition';
 
 export default class RootContainer extends Component {
   render() {
@@ -13,6 +14,7 @@ export default class RootContainer extends Component {
             <CurrentBoard />
             <ActionConfiguration />
             <PermutationEstimation />
+            <UtilityDefinition />
             <ComputeControl />
           </div>
         </div>
