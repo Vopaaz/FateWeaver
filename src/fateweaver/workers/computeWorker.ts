@@ -1,4 +1,3 @@
-// src/fateweaver/workers/computeWorker.ts
 import {
   MastermindActionId,
   ALL_MASTERMIND_ACTIONS,

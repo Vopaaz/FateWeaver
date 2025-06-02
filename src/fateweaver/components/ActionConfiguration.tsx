@@ -1,4 +1,3 @@
-// src/fateweaver/components/ActionConfiguration.tsx
 import React, { Component, ReactNode } from 'react';
 import { connect } from 'react-redux';
 import { RootState, AppDispatch } from '../store/store';

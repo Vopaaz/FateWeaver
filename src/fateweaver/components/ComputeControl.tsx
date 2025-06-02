@@ -1,4 +1,3 @@
-// src/fateweaver/components/ComputeControl.tsx
 import React, { Component } from "react";
 import { connect } from "react-redux";
 import { RootState, AppDispatch } from "../store/store";
@@ -237,11 +236,10 @@ class ComputeControl extends Component<Props> {
           {status === "running" ? `${etaSec}s` : "--"}
         </p>
         <p className="small">
-          由于“如果剧作家没有在某个地点放任何牌，主人公也不会在这个地点放任何牌”的提前剪枝，
-          实际进行的枚举数量可能会比估计的少
+          基于“如果剧作家没有在某个地点放任何牌，主人公就不会在这个地点放禁止密谋”的提前剪枝，
+          实际进行的枚举数量可能会比估计的少，为正常现象
         </p>
 
-        {/* 按钮 */}
         {status === "idle" ? (
           <button
             className="btn btn-primary"

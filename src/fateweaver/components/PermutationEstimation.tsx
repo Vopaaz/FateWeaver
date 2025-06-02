@@ -1,4 +1,3 @@
-// src/fateweaver/components/PermutationEstimation.tsx
 import React, { Component } from "react";
 import { connect } from "react-redux";
 import { AppDispatch, RootState } from "../store/store";

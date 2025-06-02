@@ -1,4 +1,3 @@
-// src/fateweaver/store/actionConfigSlice.ts
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import {
   MastermindActionId,
