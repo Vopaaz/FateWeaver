@@ -36,7 +36,6 @@ interface LocalStats {
 interface StartMessage {
   type: 'start';
   sliceDistributions: Array<Record<MastermindActionId, number>>;
-  mastermindConfig: Record<MastermindActionId, number>;
   protagonistConfig: Record<ProtagonistActionId, number>;
   mastermindScope: Record<MastermindActionId, Target[]>;
   protagonistScope: Record<ProtagonistActionId, Target[]>;
@@ -125,7 +124,7 @@ class ComputeEngine {
     mastermindPlacement: Record<MastermindActionId, Target[]>;
     protagonistPlacement: Record<ProtagonistActionId, Target[]>;
   }): Promise<number> {
-    return Math.random();
+    return 0;
   }
 }
 
@@ -235,10 +234,10 @@ async function handleOneMasterDist(
             });
 
             localStats.processedCount += 1;
-            if (localStats.processedCount % 500 === 0) {
+            if (localStats.processedCount % 5000 === 0) {
               const msg: ProgressMessage = {
                 type: 'progress',
-                processed: 500,
+                processed: 5000,
               };
               globalThis.postMessage(msg);
             }
@@ -285,7 +284,6 @@ async function handleOneMasterDist(
 
 async function runWorker(
   sliceDistributions: Array<Record<MastermindActionId, number>>,
-  mastermindConfig: Record<MastermindActionId, number>,
   protagonistConfig: Record<ProtagonistActionId, number>,
   mastermindScope: Record<MastermindActionId, Target[]>,
   protagonistScope: Record<ProtagonistActionId, Target[]>
@@ -310,7 +308,7 @@ async function runWorker(
     );
   }
 
-  const remainder = localStats.processedCount % 500;
+  const remainder = localStats.processedCount % 5000;
   if (remainder > 0) {
     const msg: ProgressMessage = {
       type: 'progress',
@@ -334,7 +332,6 @@ globalThis.addEventListener('message', (ev: MessageEvent) => {
     canceledFlag = false;
     runWorker(
       data.sliceDistributions,
-      data.mastermindConfig,
       data.protagonistConfig,
       data.mastermindScope,
       data.protagonistScope

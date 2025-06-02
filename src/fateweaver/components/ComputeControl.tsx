@@ -173,7 +173,6 @@ class ComputeControl extends Component<Props> {
       w.postMessage({
         type: "start",
         sliceDistributions: sliceDist,
-        mastermindConfig,
         protagonistConfig,
         mastermindScope,
         protagonistScope,
@@ -218,6 +217,7 @@ class ComputeControl extends Component<Props> {
       <div className="container py-4">
         <h5 className="mb-3 text-center">计算控制台</h5>
         {/* 进度条 */}
+
         <div className="progress mb-2" style={{ height: "1.5rem" }}>
           <div
             className="progress-bar"
@@ -230,11 +230,15 @@ class ComputeControl extends Component<Props> {
             {percent.toFixed(1)}%
           </div>
         </div>
-        <p className="small">
+        <p>
           已处理: {progress.toLocaleString()} / {totalEstimate.toLocaleString()}
           <br />
           已耗时: {elapsedSec}s ，预计剩余:{" "}
           {status === "running" ? `${etaSec}s` : "--"}
+        </p>
+        <p className="small">
+          由于“如果剧作家没有在某个地点放任何牌，主人公也不会在这个地点放任何牌”的提前剪枝，
+          实际进行的枚举数量可能会比估计的少
         </p>
 
         {/* 按钮 */}

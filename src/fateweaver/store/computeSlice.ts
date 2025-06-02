@@ -140,9 +140,6 @@ const computeSlice = createSlice({
      */
     incrementProgressBy(state, action: PayloadAction<number>) {
       state.progress += action.payload;
-      if (state.progress > state.totalEstimate) {
-        state.progress = state.totalEstimate;
-      }
     },
     /**
      * 合并某个 Worker 砍回来的“剧作家本地统计”到全局
