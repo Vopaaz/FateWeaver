@@ -1,7 +1,7 @@
 // src/fateweaver/components/PermutationEstimation.tsx
 import React, { Component } from "react";
 import { connect } from "react-redux";
-import { RootState } from "../store/store";
+import { AppDispatch, RootState } from "../store/store";
 import {
   MastermindActionId,
   ALL_MASTERMIND_ACTIONS,
@@ -15,6 +15,7 @@ import {
   selectProtagonistConfig,
   selectProtagonistScope,
 } from "../store/actionConfigSlice";
+import { setTotalEstimate } from "../store/computeSlice";
 
 type Target = LocationId | CharacterId;
 
@@ -27,6 +28,7 @@ interface Props {
   // scope rules per action
   mastermindScope: Record<MastermindActionId, Target[]>;
   protagonistScope: Record<ProtagonistActionId, Target[]>;
+  dispatch: AppDispatch;
 }
 
 class PermutationEstimation extends Component<Props> {
@@ -105,6 +107,67 @@ class PermutationEstimation extends Component<Props> {
       (sum, dist) => sum + this.countWaysForDistribution(dist, scope),
       0
     );
+  }
+
+  componentDidMount() {
+    // 在组件挂载后，立刻算一次 “总估算数量” 并写入 Redux
+    const {
+      mastermindConfig,
+      mastermindScope,
+      protagonistConfig,
+      protagonistScope,
+      dispatch,
+    } = this.props;
+
+    const mastermindTotal = this.computeTotal(
+      ALL_MASTERMIND_ACTIONS,
+      mastermindConfig,
+      mastermindScope
+    );
+    const protagonistTotal = this.computeTotal(
+      ALL_PROTAGONIST_ACTIONS,
+      protagonistConfig,
+      protagonistScope
+    );
+    const overall = mastermindTotal * protagonistTotal;
+
+    dispatch(setTotalEstimate(overall));
+  }
+
+  componentDidUpdate(prevProps: Props) {
+    // 如果用户修改了配置（trigger 重新估算）
+    if (
+      JSON.stringify(prevProps.mastermindConfig) !==
+        JSON.stringify(this.props.mastermindConfig) ||
+      JSON.stringify(prevProps.protagonistConfig) !==
+        JSON.stringify(this.props.protagonistConfig) ||
+      JSON.stringify(prevProps.mastermindScope) !==
+        JSON.stringify(this.props.mastermindScope) ||
+      JSON.stringify(prevProps.protagonistScope) !==
+        JSON.stringify(this.props.protagonistScope)
+    ) {
+      const {
+        mastermindConfig,
+        mastermindScope,
+        protagonistConfig,
+        protagonistScope,
+        dispatch,
+      } = this.props;
+
+      const mastermindTotal = this.computeTotal(
+        ALL_MASTERMIND_ACTIONS,
+        mastermindConfig,
+        mastermindScope
+      );
+      const protagonistTotal = this.computeTotal(
+        ALL_PROTAGONIST_ACTIONS,
+        protagonistConfig,
+        protagonistScope
+      );
+      const overall = mastermindTotal * protagonistTotal;
+
+      dispatch(setTotalEstimate(overall));
+    }
   }
 
   render() {
