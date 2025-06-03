@@ -4,6 +4,7 @@ import ActionConfiguration from './components/ActionConfiguration';
 import PermutationEstimation from './components/PermutationEstimation';
 import ComputeControl from './components/ComputeControl';
 import UtilityDefinition from './components/UtilityDefinition';
+import ResultDisplay from './components/ResultDisplay';
 
 export default class RootContainer extends Component {
   render() {
@@ -16,6 +17,7 @@ export default class RootContainer extends Component {
             <PermutationEstimation />
             <UtilityDefinition />
             <ComputeControl />
+            <ResultDisplay />
           </div>
         </div>
       </div>
