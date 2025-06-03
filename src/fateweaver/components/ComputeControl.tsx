@@ -1,3 +1,5 @@
+// src/components/ComputeControl.tsx
+
 import React, { Component } from "react";
 import { connect } from "react-redux";
 import { RootState, AppDispatch } from "../store/store";
@@ -23,6 +25,10 @@ import {
   ProtagonistStatEntry,
 } from "../store/computeSlice";
 
+// 新增：从 utilitySlice 导入类型
+import { UtilityItem, ValueDefinition } from "../store/utilitySlice";
+
+
 // 使用 TypeScript 的 Worker 导入写法（CRA/webpack 支持）：
 const ComputeWorker = new Worker(
   new URL("../workers/computeWorker.ts", import.meta.url),
@@ -42,6 +48,10 @@ interface Props {
   status: "idle" | "running";
   startTime: number | null;
   canceled: boolean;
+
+  // 新增：将所有规则与值列表注入
+  utilities: UtilityItem[];
+  values: ValueDefinition[];
 
   dispatchStart: (total: number) => void;
   dispatchCancel: () => void;
@@ -209,6 +219,27 @@ class ComputeControl extends Component<Props> {
     this.remainingWorkers = 0;
   }
 
+  /**
+   * 判断是否可以“开始计算”
+   * 新增：直接使用 store 中的 isValid 字段，不再重复计算
+   */
+  private canStartCompute(): boolean {
+    const { utilities, values } = this.props;
+
+    // 必须至少有一条效用值
+    if (values.length === 0) return false;
+
+    // 所有规则必须有效
+    for (const u of utilities) {
+      if (!u.isValid) return false;
+    }
+    // 所有效用值必须有效
+    for (const v of values) {
+      if (!v.isValid) return false;
+    }
+    return true;
+  }
+
   render() {
     const { totalEstimate, progress, status, startTime } = this.props;
     const elapsedSec =
@@ -225,6 +256,12 @@ class ComputeControl extends Component<Props> {
     }
     const percent =
       totalEstimate > 0 ? Math.min((progress / totalEstimate) * 100, 100) : 0;
+
+    // 禁用条件：totalEstimate 为 0，或没有完整的规则/值，或正在运行
+    const startDisabled =
+      totalEstimate === 0 ||
+      !this.canStartCompute() ||
+      status === "running";
 
     return (
       <div className="container py-4">
@@ -257,7 +294,7 @@ class ComputeControl extends Component<Props> {
           <button
             className="btn btn-primary"
             onClick={this.handleStart}
-            disabled={totalEstimate === 0}
+            disabled={startDisabled}
           >
             开始计算
           </button>
@@ -281,6 +318,10 @@ const mapStateToProps = (state: RootState) => ({
   status: selectComputeStatus(state),
   startTime: selectComputeStartTime(state),
   canceled: selectComputeCanceled(state),
+
+  // 新增：将规则列表和值列表从 store 中映射进来
+  utilities: state.utility.items,
+  values: state.utility.values,
 });
 
 const mapDispatchToProps = (dispatch: AppDispatch) => ({

@@ -1,10 +1,13 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { CharacterId, LocationId, ALL_CHARACTERS } from "../constants/board";
+// src/store/boardSlice.ts
+
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { CharacterId, LocationId, ALL_CHARACTERS } from '../constants/board';
 
 export interface CharacterStats {
   paranoia: number;
   goodwill: number;
   intrigue: number;
+  alive: boolean;
 }
 export interface LocationStats {
   characters: CharacterId[];
@@ -17,7 +20,10 @@ export interface BoardState {
 
 const initialCharacterStats: Record<CharacterId, CharacterStats> =
   ALL_CHARACTERS.reduce(
-    (acc, id) => ({ ...acc, [id]: { paranoia: 0, goodwill: 0, intrigue: 0 } }),
+    (acc, id) => ({
+      ...acc,
+      [id]: { paranoia: 0, goodwill: 0, intrigue: 0, alive: true },
+    }),
     {} as Record<CharacterId, CharacterStats>
   );
 
@@ -32,7 +38,7 @@ const initialState: BoardState = {
 };
 
 const boardSlice = createSlice({
-  name: "board",
+  name: 'board',
   initialState,
   reducers: {
     addCharacter(
@@ -88,12 +94,19 @@ const boardSlice = createSlice({
       state,
       action: PayloadAction<{
         characterId: CharacterId;
-        stat: keyof CharacterStats;
+        stat: keyof Omit<CharacterStats, 'alive'>;
         value: number;
       }>
     ) {
       const { characterId, stat, value } = action.payload;
       state.characterStats[characterId][stat] = Math.max(0, value);
+    },
+    setCharacterAlive(
+      state,
+      action: PayloadAction<{ characterId: CharacterId; alive: boolean }>
+    ) {
+      const { characterId, alive } = action.payload;
+      state.characterStats[characterId].alive = alive;
     },
     setLocationIntrigue(
       state,
@@ -127,6 +140,7 @@ export const {
   removeCharacter,
   moveCharacter,
   setCharacterStat,
+  setCharacterAlive,
   setLocationIntrigue,
   incrementLocationIntrigue,
   decrementLocationIntrigue,

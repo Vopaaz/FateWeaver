@@ -1,3 +1,5 @@
+// src/components/CurrentBoard.tsx
+
 import React, { Component, ReactNode } from 'react';
 import { connect } from 'react-redux';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
@@ -8,6 +10,7 @@ import {
   moveCharacter,
   setCharacterStat,
   setLocationIntrigue,
+  setCharacterAlive,
   CharacterStats,
 } from '../store/boardSlice';
 import {
@@ -20,11 +23,16 @@ import {
 } from '../constants/board';
 import TinyPinyin from 'tiny-pinyin';
 
-export type StatKey = keyof CharacterStats;
+// 新增：导入 UtilityItem，用于检测角色是否被引用
+import { UtilityItem } from '../store/utilitySlice';
+
+export type StatKey = keyof Omit<CharacterStats, 'alive'>;
 
 interface Props {
   locations: Record<LocationId, { characters: CharacterId[]; intrigue: number }>;
   characterStats: Record<CharacterId, CharacterStats>;
+  utilities: UtilityItem[]; // 所有效用规则
+
   addCharacter: (args: { locationId: LocationId; characterId: CharacterId }) => void;
   removeCharacter: (args: { locationId: LocationId; characterId: CharacterId }) => void;
   moveCharacter: (args: {
@@ -34,6 +42,7 @@ interface Props {
     destinationIndex: number;
   }) => void;
   setCharacterStat: (args: { characterId: CharacterId; stat: StatKey; value: number }) => void;
+  setCharacterAlive: (args: { characterId: CharacterId; alive: boolean }) => void;
   setLocationIntrigue: (args: { locationId: LocationId; value: number }) => void;
 }
 
@@ -146,6 +155,7 @@ class CurrentBoard extends Component<Props, State> {
             <thead>
               <tr className="text-center">
                 <th className="text-nowrap">角色</th>
+                <th className="text-nowrap">存活</th>
                 <th className="text-nowrap">不安</th>
                 <th className="text-nowrap">友好</th>
                 <th className="text-nowrap">密谋</th>
@@ -155,11 +165,23 @@ class CurrentBoard extends Component<Props, State> {
             <tbody>
               {characters.map((characterId, idx) => {
                 const stats = this.props.characterStats[characterId];
+                // 检查此角色是否被任意效用规则引用
+                const isReferenced = this.props.utilities.some(u =>
+                  u.params.some(p => p === characterId)
+                );
                 return (
                   <Draggable key={characterId} draggableId={characterId} index={idx}>
                     {p => (
                       <tr ref={p.innerRef} {...p.draggableProps}>
                         <td {...p.dragHandleProps} className="text-nowrap">{CHARACTERS_I18N[characterId]}</td>
+                        <td className="text-nowrap p-1 text-center">
+                          <input
+                            type="checkbox"
+                            className="form-check-input"
+                            checked={stats.alive}
+                            onChange={e => this.props.setCharacterAlive({ characterId, alive: e.target.checked })}
+                          />
+                        </td>
                         {(['paranoia','goodwill','intrigue'] as StatKey[]).map(stat => (
                           <td key={stat} className="text-nowrap p-1 text-center">
                             <input
@@ -172,7 +194,14 @@ class CurrentBoard extends Component<Props, State> {
                           </td>
                         ))}
                         <td className="text-nowrap p-1 text-center">
-                          <button className="btn btn-sm btn-outline-danger" onClick={() => this.props.removeCharacter({ locationId, characterId })}>删除</button>
+                          <button
+                            className={isReferenced ? "btn btn-sm btn-outline-disabled" : "btn btn-sm btn-outline-danger"}
+                            onClick={() => this.props.removeCharacter({ locationId, characterId })}
+                            disabled={isReferenced}
+                            title={isReferenced ? "该角色在效用规则中被引用，无法删除" : ""}
+                          >
+                            删除
+                          </button>
                         </td>
                       </tr>
                     )}
@@ -190,7 +219,13 @@ class CurrentBoard extends Component<Props, State> {
   render() {
     return (
       <div className="container py-4">
-        <h2 className="mb-4 text-center">当前局面（暂无禁入区域验证，请保证输入正确）</h2>
+        <h2 className="mb-4 text-center">当前局面</h2>
+        <p className="mb-2 text-center">
+          暂无禁入区域验证，请保证输入正确。
+          角色可以在各个地点之间 drag and drop.
+          如果角色已经被某条效用规则引用，则无法删除。
+        </p>
+        <p></p>
         <DragDropContext onDragEnd={this.onDragEnd}>
           <div className="row row-cols-1 row-cols-md-2 g-4">
             {ALL_LOCATIONS.map(locationId => {
@@ -217,12 +252,14 @@ class CurrentBoard extends Component<Props, State> {
 const mapStateToProps = (state: RootState) => ({
   locations: state.board.locations,
   characterStats: state.board.characterStats,
+  utilities: state.utility.items, // 映射所有效用规则
 });
 const mapDispatchToProps = (dispatch: AppDispatch) => ({
   addCharacter: (args: { locationId: LocationId; characterId: CharacterId }) => dispatch(addCharacter(args)),
   removeCharacter: (args: { locationId: LocationId; characterId: CharacterId }) => dispatch(removeCharacter(args)),
   moveCharacter: (args: { sourceLocationId: LocationId; destinationLocationId: LocationId; sourceIndex: number; destinationIndex: number }) => dispatch(moveCharacter(args)),
   setCharacterStat: (args: { characterId: CharacterId; stat: StatKey; value: number }) => dispatch(setCharacterStat(args)),
+  setCharacterAlive: (args: { characterId: CharacterId; alive: boolean }) => dispatch(setCharacterAlive(args)),
   setLocationIntrigue: (args: { locationId: LocationId; value: number }) => dispatch(setLocationIntrigue(args)),
 });
 

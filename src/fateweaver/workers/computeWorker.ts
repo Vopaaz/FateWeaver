@@ -9,6 +9,7 @@ import {
   MastermindStatEntry,
   ProtagonistStatEntry,
 } from "../store/computeSlice";
+import { ComputeEngine } from "./computeEngine";
 
 export type Target = LocationId | CharacterId;
 
@@ -108,15 +109,6 @@ function generateDistributions<T extends string>(
   return results;
 }
 
-class ComputeEngine {
-  async compute(args: {
-    mastermindPlacement: Record<MastermindActionId, Target[]>;
-    protagonistPlacement: Record<ProtagonistActionId, Target[]>;
-  }): Promise<number> {
-    // 在此调用真实的“效用值”计算逻辑
-    return 0;
-  }
-}
 
 /**
  * 处理单个 Mastermind 分布 dist：

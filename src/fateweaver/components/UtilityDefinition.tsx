@@ -55,10 +55,6 @@ interface State {
   valueInputs: Record<string, string>;
 }
 
-interface Adjacency {
-  [key: string]: string[];
-}
-
 class UtilityDefinition extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
@@ -74,39 +70,17 @@ class UtilityDefinition extends Component<Props, State> {
   }
 
   componentDidUpdate(prevProps: Props) {
+    // 如果 values 改变，重新同步本地输入值
     if (prevProps.values !== this.props.values) {
       this.syncValueInputsFromProps();
     }
 
-    // 清理：如果一个规则被删除，修正引用该规则的其他规则和效用值
-    if (prevProps.utilities !== this.props.utilities) {
-      const validRuleIds = new Set(this.props.utilities.map((u) => u.id));
-
-      // 对每一个效用规则，检查其所有 'Rule' 参数
-      this.props.utilities.forEach((u) => {
-        if (!u.type) return;
-        const def = UTILITY_RULES[u.type];
-        def.params.forEach((ptype, idx) => {
-          if (ptype === 'Rule') {
-            const rid = String(u.params[idx] || '');
-            if (rid && !validRuleIds.has(rid)) {
-              // 将该参数重置为空
-              this.props.setUtilityParam({ id: u.id, index: idx, value: '' });
-            }
-          }
-        });
-      });
-
-      // 对每一个效用值定义，检查其 ruleId
-      this.props.values.forEach((v) => {
-        if (v.ruleId && !validRuleIds.has(v.ruleId)) {
-          this.props.setValueRule({ id: v.id, ruleId: '' });
-        }
-      });
-    }
+    // 如果 utilities 被删除后导致引用失效，参数已在 Slice 中统一复位，
+    // 这里无需额外修改
+    // 同理，效用值的 ruleId 在 Slice 中也已复位
   }
 
-  /** 将 Redux 中 numeric value 初始化到本地字符串 state */
+  /** 将 Redux 中数值 value 初始化到本地字符串 state */
   private syncValueInputsFromProps() {
     const newInputs: Record<string, string> = {};
     this.props.values.forEach((v) => {
@@ -121,71 +95,6 @@ class UtilityDefinition extends Component<Props, State> {
 
   handleAddValue() {
     this.props.addValue();
-  }
-
-  private isComplete(item: UtilityItem): boolean {
-    if (!item.type) return false;
-    const def = UTILITY_RULES[item.type];
-    for (let idx = 0; idx < def.params.length; idx++) {
-      const ptype = def.params[idx];
-      const val = item.params[idx];
-      if (ptype === 'Character' || ptype === 'Location' || ptype === 'Target') {
-        if (!val || String(val).trim() === '') return false;
-      }
-      if (ptype === 'Rule') {
-        const rid = String(val || '');
-        const ref = this.props.utilities.find((u) => u.id === rid);
-        if (!ref || !this.isComplete(ref)) return false;
-      }
-    }
-    return !this.introducesCycle(item.id, '');
-  }
-
-  private buildAdjList(overrides?: { source: string; target: string }): Adjacency {
-    const adj: Adjacency = {};
-    this.props.utilities.forEach((u) => {
-      adj[u.id] = [];
-    });
-    this.props.utilities.forEach((u) => {
-      if (!u.type) return;
-      const def = UTILITY_RULES[u.type];
-      def.params.forEach((ptype, idx) => {
-        if (ptype === 'Rule') {
-          const targetId = String(u.params[idx] || '');
-          if (targetId && adj[u.id]) adj[u.id].push(targetId);
-        }
-      });
-    });
-    if (overrides) {
-      const { source, target } = overrides;
-      if (!adj[source]) adj[source] = [];
-      adj[source].push(target);
-    }
-    return adj;
-  }
-
-  private introducesCycle(source: string, target: string): boolean {
-    const adj = this.buildAdjList(target ? { source, target } : undefined);
-    const visited: Record<string, boolean> = {};
-    const recStack: Record<string, boolean> = {};
-
-    const dfs = (node: string): boolean => {
-      if (!visited[node]) {
-        visited[node] = true;
-        recStack[node] = true;
-        for (const nxt of adj[node] || []) {
-          if (!visited[nxt] && dfs(nxt)) return true;
-          else if (recStack[nxt]) return true;
-        }
-      }
-      recStack[node] = false;
-      return false;
-    };
-
-    return Object.keys(adj).some((id) => {
-      if (!visited[id] && dfs(id)) return true;
-      return false;
-    });
   }
 
   private renderRuleText(item: UtilityItem): string {
@@ -335,10 +244,7 @@ class UtilityDefinition extends Component<Props, State> {
       case 'Rule': {
         const candidates = this.props.utilities.filter((u) => {
           if (u.id === id) return false;
-          if (!u.type) return false;
-          if (!this.isComplete(u)) return false;
-          if (this.introducesCycle(id, u.id)) return false;
-          return true;
+          return u.isValid;
         });
         return (
           <select
@@ -369,14 +275,7 @@ class UtilityDefinition extends Component<Props, State> {
     }
   }
 
-  private isValueValid(valDef: ValueDefinition): boolean {
-    if (!valDef.ruleId) return false;
-    const ref = this.props.utilities.find((u) => u.id === valDef.ruleId);
-    return Boolean(ref && ref.type && this.isComplete(ref));
-  }
-
   private handleValueInputChange = (id: string, raw: string) => {
-    // 允许空字符串或符合 /^-?\d*$/
     if (/^-?\d*$/.test(raw)) {
       this.setState((prev) => ({
         valueInputs: { ...prev.valueInputs, [id]: raw },
@@ -399,37 +298,9 @@ class UtilityDefinition extends Component<Props, State> {
 
   private renderRuleCard(item: UtilityItem, charactersOnBoard: CharacterId[]): ReactNode {
     const def = item.type ? UTILITY_RULES[item.type] : null;
-
-    let isIncomplete = false;
-    if (!item.type) isIncomplete = true;
-    else {
-      const defParams = def!.params;
-      for (let idx = 0; idx < defParams.length; idx++) {
-        const ptype = defParams[idx];
-        const val = item.params[idx];
-        if (['Character', 'Location', 'Target'].includes(ptype)) {
-          if (!val || String(val).trim() === '') {
-            isIncomplete = true;
-            break;
-          }
-        }
-        if (ptype === 'Rule') {
-          const rid = String(val || '');
-          const ref = this.props.utilities.find((u) => u.id === rid);
-          if (!ref || !this.isComplete(ref)) {
-            isIncomplete = true;
-            break;
-          }
-        }
-      }
-      if (!isIncomplete && this.introducesCycle(item.id, '')) {
-        isIncomplete = true;
-      }
-    }
-
-    const cardClass = isIncomplete
-      ? 'card mb-3 border border-danger'
-      : 'card mb-3';
+    const cardClass = item.isValid
+      ? 'card mb-3'
+      : 'card mb-3 border border-danger';
 
     return (
       <div key={item.id} className={cardClass}>
@@ -509,9 +380,10 @@ class UtilityDefinition extends Component<Props, State> {
   }
 
   private renderValueCard(valDef: ValueDefinition, ruleCandidates: UtilityItem[]): ReactNode {
-    const isInvalid = !this.isValueValid(valDef);
-    const cardClass = isInvalid ? 'card mb-3 border border-danger' : 'card mb-3';
     const rawValue = this.state.valueInputs[valDef.id] ?? '';
+    const cardClass = valDef.isValid
+      ? 'card mb-3'
+      : 'card mb-3 border border-danger';
 
     return (
       <div key={valDef.id} className={cardClass}>
@@ -575,7 +447,7 @@ class UtilityDefinition extends Component<Props, State> {
       )
     );
 
-    const ruleCandidates = utilities.filter((u) => u.type && this.isComplete(u));
+    const ruleCandidates = utilities.filter((u) => u.isValid);
 
     return (
       <div className="container py-4">
