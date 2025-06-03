@@ -46,11 +46,11 @@ export const UTILITY_RULES: Record<UtilityRuleType, UtilityRuleDefinition> = {
     params: ['Character', 'Character'],
   },
   numberShareLocationGreaterThan: {
-    text: '与 ? 处于同一地点的人数大于',
+    text: '与 ? 处于同一地点的人数（不包括自身）大于',
     params: ['Character', 'Number'],
   },
   numberShareLocationEquals: {
-    text: '与 ? 处于同一地点的人数等于',
+    text: '与 ? 处于同一地点的人数（不包括自身）等于',
     params: ['Character', 'Number'],
   },
   and: {
