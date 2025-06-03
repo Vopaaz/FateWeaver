@@ -35,7 +35,7 @@ export const UTILITY_RULES: Record<UtilityRuleType, UtilityRuleDefinition> = {
   },
   goodwillGreaterThan: {
     text: '? 的友好大于 ?',
-    params: ['Target', 'Number'],
+    params: ['Character', 'Number'],
   },
   someoneInSomewhere: {
     text: '? 位于 ?',

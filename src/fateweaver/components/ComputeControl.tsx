@@ -28,7 +28,6 @@ import {
 // 新增：从 utilitySlice 导入类型
 import { UtilityItem, ValueDefinition } from "../store/utilitySlice";
 
-
 // 使用 TypeScript 的 Worker 导入写法（CRA/webpack 支持）：
 const ComputeWorker = new Worker(
   new URL("../workers/computeWorker.ts", import.meta.url),
@@ -52,6 +51,12 @@ interface Props {
   // 新增：将所有规则与值列表注入
   utilities: UtilityItem[];
   values: ValueDefinition[];
+
+  // 新增：映射 board 的当前状态
+  boardState: {
+    locations: Record<LocationId, { characters: CharacterId[]; intrigue: number }>;
+    characterStats: Record<CharacterId, { paranoia: number; goodwill: number; intrigue: number; alive: boolean }>;
+  };
 
   dispatchStart: (total: number) => void;
   dispatchCancel: () => void;
@@ -158,6 +163,9 @@ class ComputeControl extends Component<Props> {
       protagonistConfig,
       mastermindScope,
       protagonistScope,
+      boardState,
+      utilities,
+      values,
       dispatchStart,
     } = this.props;
 
@@ -199,6 +207,9 @@ class ComputeControl extends Component<Props> {
         protagonistConfig,
         mastermindScope,
         protagonistScope,
+        boardState,
+        utilities,
+        values,
       } as any);
     }
   }
@@ -286,8 +297,8 @@ class ComputeControl extends Component<Props> {
           {status === "running" ? `${etaSec}s` : "--"}
         </p>
         <p className="small">
-          基于“如果剧作家没有在某个地点放任何牌，主人公就不会在这个地点放禁止密谋”的提前剪枝，
-          实际进行的枚举数量可能会比估计的少，为正常现象
+          基于“如果剧作家没有在某个对象放任何牌，主人公就不会在这个对象放禁止密谋或禁止移动”的提前剪枝，
+          实际进行的枚举数量可能远少于估计值，为正常现象
         </p>
 
         {status === "idle" ? (
@@ -322,6 +333,12 @@ const mapStateToProps = (state: RootState) => ({
   // 新增：将规则列表和值列表从 store 中映射进来
   utilities: state.utility.items,
   values: state.utility.values,
+
+  // 新增：将 board 状态映射进来
+  boardState: {
+    locations: state.board.locations,
+    characterStats: state.board.characterStats,
+  },
 });
 
 const mapDispatchToProps = (dispatch: AppDispatch) => ({

@@ -1,3 +1,5 @@
+// src/fateweaver/workers/computeWorker.ts
+
 import {
   MastermindActionId,
   ALL_MASTERMIND_ACTIONS,
@@ -9,7 +11,8 @@ import {
   MastermindStatEntry,
   ProtagonistStatEntry,
 } from "../store/computeSlice";
-import { ComputeEngine } from "./computeEngine";
+import { ComputeEngine, BoardState } from "./computeEngine";
+import { UtilityItem, ValueDefinition } from "../store/utilitySlice";
 
 export type Target = LocationId | CharacterId;
 
@@ -25,6 +28,9 @@ interface StartMessage {
   protagonistConfig: Record<ProtagonistActionId, number>;
   mastermindScope: Record<MastermindActionId, Target[]>;
   protagonistScope: Record<ProtagonistActionId, Target[]>;
+  boardState: BoardState;
+  utilities: UtilityItem[];
+  values: ValueDefinition[];
 }
 
 interface ProgressMessage {
@@ -109,7 +115,6 @@ function generateDistributions<T extends string>(
   return results;
 }
 
-
 /**
  * 处理单个 Mastermind 分布 dist：
  *   - 递归枚举具体放置，并更新 localStats
@@ -119,6 +124,9 @@ async function handleOneMasterDist(
   protagonistConfig: Record<ProtagonistActionId, number>,
   mastermindScope: Record<MastermindActionId, Target[]>,
   protagonistScope: Record<ProtagonistActionId, Target[]>,
+  boardState: BoardState,
+  utilities: UtilityItem[],
+  values: ValueDefinition[],
   engine: ComputeEngine
 ) {
   if (canceledFlag) return;
@@ -132,31 +140,37 @@ async function handleOneMasterDist(
   const recurseMaster = async (idx: number) => {
     if (canceledFlag) return;
     if (idx === actions.length) {
-      // 所有 Mastermind 动作都已放置完毕
-      // 计算 coveredLocations
-      const coveredLocations = new Set<LocationId>();
+      // ======= 关键修改开始 =======
+      // 1) 先收集所有被 Mastermind 打到的 target（既包括地点，也包括角色）
+      const coveredTargets = new Set<Target>();
       actions.forEach((a) => {
         (placementMap[a] || []).forEach((t) => {
-          if (ALL_LOCATIONS.includes(t as LocationId)) {
-            coveredLocations.add(t as LocationId);
-          }
+          coveredTargets.add(t);
         });
       });
 
-      // 构建临时的主人公作用域：剔除“未被 Mastermind 打到的地点”
+      // 2) 构造临时的 Protagonist 作用域，分别过滤 ForbidIntrigue 和 ForbidMove：
       const tempProtoScope: Record<ProtagonistActionId, Target[]> = {
         ...protagonistScope,
       };
+
+      // —— ForbidIntrigue：只保留那些被 Mastermind 打到过且是地点的 target
       if (protagonistScope.ForbidIntrigue) {
-        const filtered = protagonistScope.ForbidIntrigue.filter((t) => {
+        const filteredIntrigue = protagonistScope.ForbidIntrigue.filter((t) => {
           const isLoc = ALL_LOCATIONS.includes(t as LocationId);
-          if (isLoc && !coveredLocations.has(t as LocationId)) {
-            return false;
-          }
-          return true;
+          return isLoc && coveredTargets.has(t);
         });
-        tempProtoScope.ForbidIntrigue = filtered;
+        tempProtoScope.ForbidIntrigue = filteredIntrigue;
       }
+
+      // —— ForbidMove：只保留那些被 Mastermind 打到过（角色或地点）的 target
+      if (protagonistScope.ForbidMove) {
+        const filteredMove = protagonistScope.ForbidMove.filter((t) =>
+          coveredTargets.has(t)
+        );
+        tempProtoScope.ForbidMove = filteredMove;
+      }
+      // ======= 关键修改结束 =======
 
       /* eslint-disable no-loop-func */
       // 枚举所有可能的 Protagonist 分布
@@ -181,6 +195,9 @@ async function handleOneMasterDist(
             const utilValue = await engine.compute({
               mastermindPlacement: placementMap,
               protagonistPlacement: pPlacementMap,
+              boardState,
+              utilities,
+              values,
             });
 
             // 在线更新 localStats.mastermindStats
@@ -234,6 +251,7 @@ async function handleOneMasterDist(
 
           const pa = pActions[jdx];
           const need = pDist[pa];
+          // 注意：后续从 tempProtoScope 中读取允许的 targets
           const avail = (tempProtoScope[pa] || []).filter((t) => !pUsed.has(t));
           const combos = combinations(avail, need);
           for (const combo of combos) {
@@ -274,7 +292,10 @@ async function runWorker(
   sliceDistributions: Array<Record<MastermindActionId, number>>,
   protagonistConfig: Record<ProtagonistActionId, number>,
   mastermindScope: Record<MastermindActionId, Target[]>,
-  protagonistScope: Record<ProtagonistActionId, Target[]>
+  protagonistScope: Record<ProtagonistActionId, Target[]>,
+  boardState: BoardState,
+  utilities: UtilityItem[],
+  values: ValueDefinition[]
 ) {
   localStats = {
     mastermindStats: makeEmptyMastermindStats(),
@@ -292,6 +313,9 @@ async function runWorker(
       protagonistConfig,
       mastermindScope,
       protagonistScope,
+      boardState,
+      utilities,
+      values,
       engine
     );
   }
@@ -322,7 +346,10 @@ globalThis.addEventListener("message", (ev: MessageEvent) => {
       data.sliceDistributions,
       data.protagonistConfig,
       data.mastermindScope,
-      data.protagonistScope
+      data.protagonistScope,
+      data.boardState,
+      data.utilities,
+      data.values
     );
   } else if (data.type === "cancel") {
     canceledFlag = true;
