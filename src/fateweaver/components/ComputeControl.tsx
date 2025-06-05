@@ -15,8 +15,8 @@ import {
   selectComputeStatus,
   selectComputeStartTime,
   selectComputeCanceled,
-  selectMastermindStats,
-  selectProtagonistStats,
+  selectFinalMastermindStats,
+  selectFinalProtagonistStats,
 } from "../store/computeSlice";
 import { MastermindActionId, ProtagonistActionId } from "../constants/actions";
 import { LocationId, CharacterId } from "../constants/board";
@@ -279,7 +279,7 @@ class ComputeControl extends Component<Props> {
 
     return (
       <div className="container py-4">
-        <h5 className="mb-3 text-center">计算控制台</h5>
+        <h2 className="mb-4 text-center">计算控制台</h2>
         <div className="progress mb-2" style={{ height: "1.5rem" }}>
           <div
             className="progress-bar"
@@ -340,8 +340,8 @@ const mapStateToProps = (state: RootState) => ({
     characterStats: state.board.characterStats,
   },
 
-  computeMastermindStats: selectMastermindStats(state),
-  computeProtagonistStats: selectProtagonistStats(state),
+  computeMastermindStats: selectFinalMastermindStats(state),
+  computeProtagonistStats: selectFinalProtagonistStats(state),
 });
 
 const mapDispatchToProps = (dispatch: AppDispatch) => ({
