@@ -244,44 +244,7 @@ export class ComputeEngine {
         }
         if (
           actSet.has("VerticalMove") &&
-          actSet.has("VerticalMove") &&
-          !actSet.has("ForbidMove")
-        ) {
-          if (!ALL_LOCATIONS.includes(t as LocationId)) {
-            const charId = t as CharacterId;
-            const loc = findLocation(charId);
-            if (!loc) continue;
-            let dest: LocationId | undefined;
-            if (loc === "Hospital") dest = "City";
-            else if (loc === "City") dest = "Hospital";
-            else if (loc === "Shrine") dest = "School";
-            else if (loc === "School") dest = "Shrine";
-            if (dest) attemptMove(charId, dest, newBoard);
-            continue;
-          }
-        }
-        if (
-          actSet.has("HorizontalMove") &&
-          actSet.has("HorizontalMove") &&
-          !actSet.has("ForbidMove")
-        ) {
-          if (!ALL_LOCATIONS.includes(t as LocationId)) {
-            const charId = t as CharacterId;
-            const loc = findLocation(charId);
-            if (!loc) continue;
-            let dest: LocationId | undefined;
-            if (loc === "Hospital") dest = "Shrine";
-            else if (loc === "Shrine") dest = "Hospital";
-            else if (loc === "City") dest = "School";
-            else if (loc === "School") dest = "City";
-            if (dest) attemptMove(charId, dest, newBoard);
-            continue;
-          }
-        }
-        if (
-          actSet.has("VerticalMove") &&
-          actSet.has("HorizontalMove") &&
-          !actSet.has("ForbidMove")
+          actSet.has("HorizontalMove")
         ) {
           if (!ALL_LOCATIONS.includes(t as LocationId)) {
             const charId = t as CharacterId;
@@ -410,107 +373,7 @@ export class ComputeEngine {
             }
           }
         }
-      } else {
-        for (const info of actions) {
-          const actionId = info.actionId;
-          const tval = targetKey as LocationId | CharacterId;
-          switch (actionId) {
-            case "GainIntrigue2": {
-              if (ALL_LOCATIONS.includes(tval as LocationId)) {
-                newBoard.locations[tval as LocationId].intrigue += 2;
-              } else {
-                newBoard.characterStats[tval as CharacterId].intrigue += 2;
-              }
-              break;
-            }
-            case "GainIntrigue": {
-              if (ALL_LOCATIONS.includes(tval as LocationId)) {
-                newBoard.locations[tval as LocationId].intrigue += 1;
-              } else {
-                newBoard.characterStats[tval as CharacterId].intrigue += 1;
-              }
-              break;
-            }
-            case "UselessLocationCover": {
-              break;
-            }
-            case "DiagonalMove": {
-              if (!ALL_LOCATIONS.includes(tval as LocationId)) {
-                const charId = tval as CharacterId;
-                const loc = findLocation(charId);
-                if (!loc) break;
-                let dest: LocationId | undefined;
-                if (loc === "Hospital") dest = "School";
-                else if (loc === "School") dest = "Hospital";
-                else if (loc === "City") dest = "Shrine";
-                else if (loc === "Shrine") dest = "City";
-                if (dest) attemptMove(charId, dest, newBoard);
-              }
-              break;
-            }
-            case "VerticalMove": {
-              if (!ALL_LOCATIONS.includes(tval as LocationId)) {
-                const charId = tval as CharacterId;
-                const loc = findLocation(charId);
-                if (!loc) break;
-                let dest: LocationId | undefined;
-                if (loc === "Hospital") dest = "City";
-                else if (loc === "City") dest = "Hospital";
-                else if (loc === "Shrine") dest = "School";
-                else if (loc === "School") dest = "Shrine";
-                if (dest) attemptMove(charId, dest, newBoard);
-              }
-              break;
-            }
-            case "HorizontalMove": {
-              if (!ALL_LOCATIONS.includes(tval as LocationId)) {
-                const charId = tval as CharacterId;
-                const loc = findLocation(charId);
-                if (!loc) break;
-                let dest: LocationId | undefined;
-                if (loc === "Hospital") dest = "Shrine";
-                else if (loc === "Shrine") dest = "Hospital";
-                else if (loc === "City") dest = "School";
-                else if (loc === "School") dest = "City";
-                if (dest) attemptMove(charId, dest, newBoard);
-              }
-              break;
-            }
-            case "GainParanoia": {
-              if (ALL_LOCATIONS.includes(tval as LocationId)) break;
-              newBoard.characterStats[tval as CharacterId].paranoia += 1;
-              break;
-            }
-            case "LoseParanoia": {
-              if (ALL_LOCATIONS.includes(tval as LocationId)) break;
-              const cur = newBoard.characterStats[tval as CharacterId].paranoia;
-              newBoard.characterStats[tval as CharacterId].paranoia = Math.max(
-                0,
-                cur - 1
-              );
-              break;
-            }
-            case "ForbidParanoia":
-            case "ForbidGoodwill":
-            case "ForbidMove": {
-              break;
-            }
-            case "GainGoodwill2": {
-              if (ALL_LOCATIONS.includes(tval as LocationId)) break;
-              newBoard.characterStats[tval as CharacterId].goodwill += 2;
-              break;
-            }
-            case "GainGoodwill": {
-              if (ALL_LOCATIONS.includes(tval as LocationId)) break;
-              newBoard.characterStats[tval as CharacterId].goodwill += 1;
-              break;
-            }
-            default: {
-              break;
-            }
-          }
-        }
-      }
+      } 
     }
 
     return newBoard;

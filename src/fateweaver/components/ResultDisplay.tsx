@@ -202,16 +202,16 @@ class ResultDisplay extends Component<Props, State> {
               </svg>
             )}
           </button>
-          <span className="fw-semibold">剧作家筛选后结果（共 {filtered.length} 条）</span>
+          <span className="fw-semibold">剧作家行动推荐</span>
         </div>
         {this.state.masterOpen && (
           <div className="card-body">
-            {filtered.map(({ combKey, stats }) => (
-              <div key={combKey} className="d-flex flex-wrap mb-4">
+            {filtered.map(({ combKey, stats }, ix) => (
+              <div key={`mastermind-comb-${ix}`} className="d-flex flex-wrap mb-4">
                 {/* 剧作家三张牌组合 */}
                 <div className="card flex-fill me-2 mb-2">
                   <div className="card-header bg-light">
-                    <strong>剧作家三张牌组合</strong>
+                    <strong>剧作家行动</strong>
                   </div>
                   <div className="card-body">
                     {this.renderPlacement<MasterPlacementMap>(stats.placement, true)}
@@ -221,14 +221,14 @@ class ResultDisplay extends Component<Props, State> {
                 {/* 最劣值板块 */}
                 <div className="card flex-fill me-2 mb-2">
                   <div className="card-header bg-light">
-                    <strong>最劣值：{stats.worstValue}</strong>
+                    <strong>最劣效用：{stats.worstValue}</strong>
                   </div>
                   <div className="card-body">
                     <p className="mb-1">
                       <strong>出现次数：</strong> {stats.worstCount}
                     </p>
                     <p className="mb-1">
-                      <strong>示例对手三张牌：</strong>
+                      <strong>示例对手行动：</strong>
                     </p>
                     {this.renderPlacement<ProtagPlacementMap>(stats.worstExample, false)}
                   </div>
@@ -237,14 +237,14 @@ class ResultDisplay extends Component<Props, State> {
                 {/* 次劣值板块 */}
                 <div className="card flex-fill me-2 mb-2">
                   <div className="card-header bg-light">
-                    <strong>次劣值：{stats.secondWorstValue}</strong>
+                    <strong>次劣效用：{stats.secondWorstValue}</strong>
                   </div>
                   <div className="card-body">
                     <p className="mb-1">
                       <strong>出现次数：</strong> {stats.secondWorstCount}
                     </p>
                     <p className="mb-1">
-                      <strong>示例对手三张牌：</strong>
+                      <strong>示例对手行动：</strong>
                     </p>
                     {this.renderPlacement<ProtagPlacementMap>(stats.secondWorstExample, false)}
                   </div>
@@ -253,14 +253,14 @@ class ResultDisplay extends Component<Props, State> {
                 {/* 第三劣值板块 */}
                 <div className="card flex-fill mb-2">
                   <div className="card-header bg-light">
-                    <strong>第三劣值：{stats.thirdWorstValue}</strong>
+                    <strong>第三劣效用：{stats.thirdWorstValue}</strong>
                   </div>
                   <div className="card-body">
                     <p className="mb-1">
                       <strong>出现次数：</strong> {stats.thirdWorstCount}
                     </p>
                     <p className="mb-1">
-                      <strong>示例对手三张牌：</strong>
+                      <strong>示例对手行动：</strong>
                     </p>
                     {this.renderPlacement<ProtagPlacementMap>(stats.thirdWorstExample, false)}
                   </div>
@@ -326,16 +326,16 @@ class ResultDisplay extends Component<Props, State> {
               </svg>
             )}
           </button>
-          <span className="fw-semibold">主人公筛选后结果（共 {filtered.length} 条）</span>
+          <span className="fw-semibold">主人公行动推荐</span>
         </div>
         {this.state.protagOpen && (
           <div className="card-body">
-            {filtered.map(({ combKey, stats }) => (
-              <div key={combKey} className="d-flex flex-wrap mb-4">
+            {filtered.map(({ combKey, stats }, ix) => (
+              <div key={`protag-comb-${ix}`} className="d-flex flex-wrap mb-4">
                 {/* 主人公三张牌组合 */}
                 <div className="card flex-fill me-2 mb-2">
                   <div className="card-header bg-light">
-                    <strong>主人公三张牌组合</strong>
+                    <strong>主人公行动</strong>
                   </div>
                   <div className="card-body">
                     {this.renderPlacement<ProtagPlacementMap>(stats.placement, false)}
@@ -345,14 +345,14 @@ class ResultDisplay extends Component<Props, State> {
                 {/* 最劣值板块 */}
                 <div className="card flex-fill me-2 mb-2">
                   <div className="card-header bg-light">
-                    <strong>最劣值：{stats.worstValue}</strong>
+                    <strong>最劣效用：{stats.worstValue}</strong>
                   </div>
                   <div className="card-body">
                     <p className="mb-1">
                       <strong>出现次数：</strong> {stats.worstCount}
                     </p>
                     <p className="mb-1">
-                      <strong>示例对手三张牌：</strong>
+                      <strong>示例对手行动：</strong>
                     </p>
                     {this.renderPlacement<MasterPlacementMap>(stats.worstExample, true)}
                   </div>
@@ -361,14 +361,14 @@ class ResultDisplay extends Component<Props, State> {
                 {/* 次劣值板块 */}
                 <div className="card flex-fill me-2 mb-2">
                   <div className="card-header bg-light">
-                    <strong>次劣值：{stats.secondWorstValue}</strong>
+                    <strong>次劣效用：{stats.secondWorstValue}</strong>
                   </div>
                   <div className="card-body">
                     <p className="mb-1">
                       <strong>出现次数：</strong> {stats.secondWorstCount}
                     </p>
                     <p className="mb-1">
-                      <strong>示例对手三张牌：</strong>
+                      <strong>示例对手行动：</strong>
                     </p>
                     {this.renderPlacement<MasterPlacementMap>(stats.secondWorstExample, true)}
                   </div>
@@ -377,14 +377,14 @@ class ResultDisplay extends Component<Props, State> {
                 {/* 第三劣值板块 */}
                 <div className="card flex-fill mb-2">
                   <div className="card-header bg-light">
-                    <strong>第三劣值：{stats.thirdWorstValue}</strong>
+                    <strong>第三劣效用：{stats.thirdWorstValue}</strong>
                   </div>
                   <div className="card-body">
                     <p className="mb-1">
                       <strong>出现次数：</strong> {stats.thirdWorstCount}
                     </p>
                     <p className="mb-1">
-                      <strong>示例对手三张牌：</strong>
+                      <strong>示例对手行动：</strong>
                     </p>
                     {this.renderPlacement<MasterPlacementMap>(stats.thirdWorstExample, true)}
                   </div>
@@ -406,7 +406,7 @@ class ResultDisplay extends Component<Props, State> {
 
     return (
       <div className="container mt-4">
-        <h5 className="text-center mb-3">最终聚合结果（筛选后）</h5>
+        <h2 className="text-center mb-4">行动推荐</h2>
         {this.renderFilteredMaster()}
         {this.renderFilteredProtag()}
       </div>

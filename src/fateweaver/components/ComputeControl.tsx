@@ -15,8 +15,6 @@ import {
   selectComputeStatus,
   selectComputeStartTime,
   selectComputeCanceled,
-  selectFinalMastermindStats,
-  selectFinalProtagonistStats,
 } from "../store/computeSlice";
 import { MastermindActionId, ProtagonistActionId } from "../constants/actions";
 import { LocationId, CharacterId } from "../constants/board";
@@ -29,13 +27,14 @@ import {
 
 // 新增：从 utilitySlice 导入类型
 import { UtilityItem, ValueDefinition } from "../store/utilitySlice";
-// 新增：从 resultSlice 导入 action
+
+// ** 新增：导入原先存在的 resultSlice 中的 action 名称 **
 import { setFinalResult, clearFinalResult } from "../store/resultSlice";
 
-
+// 使用 TypeScript 的 Worker 导入写法（CRA/webpack 支持）：
 const ComputeWorker = new Worker(
   new URL("../workers/computeWorker.ts", import.meta.url),
-  { type: "module" }
+  { type: "module" } // 用模块化方式加载
 );
 
 type Target = LocationId | CharacterId;
@@ -52,33 +51,34 @@ interface Props {
   startTime: number | null;
   canceled: boolean;
 
+  // 新增：将所有规则与值列表注入
   utilities: UtilityItem[];
   values: ValueDefinition[];
 
+  // 新增：映射 board 的当前状态
   boardState: {
     locations: Record<LocationId, { characters: CharacterId[]; intrigue: number }>;
     characterStats: Record<CharacterId, { paranoia: number; goodwill: number; intrigue: number; alive: boolean }>;
   };
 
-  dispatchStart: (total: number) => void;
-  dispatchCancel: () => void;
-  dispatchIncrementProgress: (n: number) => void;
-  dispatchMergeMastermind: (
-    stats: Record<string, MastermindStatEntry>
-  ) => void;
-  dispatchMergeProtagonist: (
-    stats: Record<string, ProtagonistStatEntry>
-  ) => void;
-  dispatchFinish: () => void;
-
-  computeMastermindStats: Record<string, MastermindStatEntry>;
-  computeProtagonistStats: Record<string, ProtagonistStatEntry>;
-
-  dispatchSetFinalResult: (payload: {
+  // ** 新增：映射 resultSlice 中的两个 action **
+  dispatchSetFinal: (payload: {
     mastermindStats: Record<string, MastermindStatEntry>;
     protagonistStats: Record<string, ProtagonistStatEntry>;
   }) => void;
-  dispatchClearFinalResult: () => void;
+  dispatchClearFinal: () => void;
+
+  dispatchStart: (total: number) => void;
+  dispatchCancel: () => void;
+  dispatchIncrementProgress: (n: number) => void;
+  // 明确指定合并统计时的类型
+  dispatchMergeMastermind: (
+    stats: Record<MastermindActionId, MastermindStatEntry>
+  ) => void;
+  dispatchMergeProtagonist: (
+    stats: Record<ProtagonistActionId, ProtagonistStatEntry>
+  ) => void;
+  dispatchFinish: () => void;
 }
 
 function generateDistributions<T extends string>(
@@ -116,35 +116,20 @@ class ComputeControl extends Component<Props> {
   }
 
   componentDidMount() {
+    // 组件挂载时，先绑定 Worker 消息
     ComputeWorker.addEventListener("message", this.onWorkerMessage);
   }
 
-  componentDidUpdate(prevProps: Props) {
-    if (prevProps.status === "running" && this.props.status === "idle") {
-      const { computeMastermindStats, computeProtagonistStats, dispatchSetFinalResult } = this.props;
-      // 深拷贝
-      const clonedMaster = JSON.parse(JSON.stringify(computeMastermindStats)) as Record<
-        string,
-        MastermindStatEntry
-      >;
-      const clonedProtag = JSON.parse(JSON.stringify(computeProtagonistStats)) as Record<
-        string,
-        ProtagonistStatEntry
-      >;
-      dispatchSetFinalResult({
-        mastermindStats: clonedMaster,
-        protagonistStats: clonedProtag,
-      });
-    }
-  }
-
   componentWillUnmount() {
+    // 组件卸载时，解绑
     ComputeWorker.removeEventListener("message", this.onWorkerMessage);
+    // 如果还在运行，广播取消
     if (this.props.status === "running") {
       this.handleCancel();
     }
   }
 
+  /** Worker 发来的消息处理函数 */
   onWorkerMessage(ev: MessageEvent) {
     const data = ev.data as
       | { type: "progress"; processed: number }
@@ -156,17 +141,25 @@ class ComputeControl extends Component<Props> {
       | { type: "aborted" };
 
     if (data.type === "progress") {
+      // 增量报告
       this.props.dispatchIncrementProgress(data.processed);
     } else if (data.type === "done") {
-      // 注意：现在接收并合并的是 Record<string, StatEntry>
+      // 合并该 Worker 的局部统计到 Redux
       this.props.dispatchMergeMastermind(data.localMastermindStats);
       this.props.dispatchMergeProtagonist(data.localProtagonistStats);
 
       this.remainingWorkers -= 1;
       if (this.remainingWorkers <= 0) {
+        // ** 所有 Worker 均已完成，先把本轮结果写入 resultSlice **
+        this.props.dispatchSetFinal({
+          mastermindStats: data.localMastermindStats,
+          protagonistStats: data.localProtagonistStats,
+        });
+        // ** 再把 compute 的状态置为已完成 **
         this.props.dispatchFinish();
       }
     } else if (data.type === "aborted") {
+      // 此 Worker 被取消，不发送局部统计也算完成
       this.remainingWorkers -= 1;
       if (this.remainingWorkers <= 0) {
         this.props.dispatchFinish();
@@ -174,6 +167,7 @@ class ComputeControl extends Component<Props> {
     }
   }
 
+  /** 点击“开始计算”按钮后的逻辑 */
   async handleStart() {
     const {
       totalEstimate,
@@ -185,25 +179,30 @@ class ComputeControl extends Component<Props> {
       utilities,
       values,
       dispatchStart,
-      dispatchClearFinalResult,
+      dispatchClearFinal, // 新增：清空上次 resultSlice 中的数据
     } = this.props;
 
     if (this.props.status === "running") return;
 
-    dispatchClearFinalResult();
+    // ** 第一步：清空上一次计算结果 **
+    dispatchClearFinal();
 
+    // 1) 先算出所有 “剧作家分布” 列表，共计 M 条
     const allDistributions = generateDistributions(
       Object.keys(mastermindConfig) as MastermindActionId[],
       mastermindConfig,
       3
     );
+    // dispatchStart 里会把 status->'running', progress->0, totalEstimate->total, startTime->now
     dispatchStart(totalEstimate);
 
+    // 2) 根据 CPU 核心数（或固定 N）创建 N 个 Worker
     const cpuCount = navigator.hardwareConcurrency || 4;
     const N = Math.min(cpuCount, allDistributions.length);
     this.remainingWorkers = N;
     this.workers = [];
 
+    // 均匀切分分布列表
     const chunkSize = Math.ceil(allDistributions.length / N);
     for (let i = 0; i < N; i++) {
       const start = i * chunkSize;
@@ -217,6 +216,7 @@ class ComputeControl extends Component<Props> {
       w.addEventListener("message", this.onWorkerMessage);
       this.workers.push(w);
 
+      // 3) 给 Worker 发送“start”消息，传入它要负责的 slice 及所有配置
       w.postMessage({
         type: "start",
         sliceDistributions: sliceDist,
@@ -230,11 +230,14 @@ class ComputeControl extends Component<Props> {
     }
   }
 
+  /** 点击“取消计算”按钮后的逻辑 */
   handleCancel() {
     this.props.dispatchCancel();
+    // 广播给所有正在运行的 Worker
     this.workers.forEach((w) => {
       w.postMessage({ type: "cancel" });
     });
+    // 解绑 Worker，并结束这些 Worker
     this.workers.forEach((w) => {
       w.terminate();
       w.removeEventListener("message", this.onWorkerMessage);
@@ -243,12 +246,21 @@ class ComputeControl extends Component<Props> {
     this.remainingWorkers = 0;
   }
 
+  /**
+   * 判断是否可以“开始计算”
+   * 新增：直接使用 store 中的 isValid 字段，不再重复计算
+   */
   private canStartCompute(): boolean {
     const { utilities, values } = this.props;
+
+    // 必须至少有一条效用值
     if (values.length === 0) return false;
+
+    // 所有规则必须有效
     for (const u of utilities) {
       if (!u.isValid) return false;
     }
+    // 所有效用值必须有效
     for (const v of values) {
       if (!v.isValid) return false;
     }
@@ -272,6 +284,7 @@ class ComputeControl extends Component<Props> {
     const percent =
       totalEstimate > 0 ? Math.min((progress / totalEstimate) * 100, 100) : 0;
 
+    // 禁用条件：totalEstimate 为 0，或没有完整的规则/值，或正在运行
     const startDisabled =
       totalEstimate === 0 ||
       !this.canStartCompute() ||
@@ -280,6 +293,7 @@ class ComputeControl extends Component<Props> {
     return (
       <div className="container py-4">
         <h2 className="mb-4 text-center">计算控制台</h2>
+        {/* 进度条 */}
         <div className="progress mb-2" style={{ height: "1.5rem" }}>
           <div
             className="progress-bar"
@@ -332,35 +346,35 @@ const mapStateToProps = (state: RootState) => ({
   startTime: selectComputeStartTime(state),
   canceled: selectComputeCanceled(state),
 
+  // 新增：将规则列表和值列表从 store 中映射进来
   utilities: state.utility.items,
   values: state.utility.values,
 
+  // 新增：将 board 状态映射进来
   boardState: {
     locations: state.board.locations,
     characterStats: state.board.characterStats,
   },
-
-  computeMastermindStats: selectFinalMastermindStats(state),
-  computeProtagonistStats: selectFinalProtagonistStats(state),
 });
 
 const mapDispatchToProps = (dispatch: AppDispatch) => ({
+  // ** 对应改动：使用现有的 clearFinalResult / setFinalResult **
+  dispatchSetFinal: (payload: {
+    mastermindStats: Record<string, MastermindStatEntry>;
+    protagonistStats: Record<string, ProtagonistStatEntry>;
+  }) => dispatch(setFinalResult(payload)),
+  dispatchClearFinal: () => dispatch(clearFinalResult()),
+
   dispatchStart: (total: number) => dispatch(startCompute({ total })),
   dispatchCancel: () => dispatch(cancelCompute()),
   dispatchIncrementProgress: (n: number) => dispatch(incrementProgressBy(n)),
   dispatchMergeMastermind: (
-    stats: Record<string, MastermindStatEntry>
+    stats: Record<MastermindActionId, MastermindStatEntry>
   ) => dispatch(mergeMastermindStats(stats)),
   dispatchMergeProtagonist: (
-    stats: Record<string, ProtagonistStatEntry>
+    stats: Record<ProtagonistActionId, ProtagonistStatEntry>
   ) => dispatch(mergeProtagonistStats(stats)),
   dispatchFinish: () => dispatch(finishCompute()),
-
-  dispatchSetFinalResult: (payload: {
-    mastermindStats: Record<string, MastermindStatEntry>;
-    protagonistStats: Record<string, ProtagonistStatEntry>;
-  }) => dispatch(setFinalResult(payload)),
-  dispatchClearFinalResult: () => dispatch(clearFinalResult()),
 });
 
 export default connect(mapStateToProps, mapDispatchToProps)(ComputeControl);

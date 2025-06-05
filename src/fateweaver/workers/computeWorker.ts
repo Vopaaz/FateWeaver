@@ -247,8 +247,7 @@ async function handleOneMasterDist(
       };
       if (protagonistScope.ForbidIntrigue) {
         const filteredIntrigue = protagonistScope.ForbidIntrigue.filter((t) => {
-          const isLoc = ALL_LOCATIONS.includes(t as LocationId);
-          return isLoc && coveredTargets.has(t);
+          return coveredTargets.has(t);
         });
         tempProtoScope.ForbidIntrigue = filteredIntrigue;
       }
