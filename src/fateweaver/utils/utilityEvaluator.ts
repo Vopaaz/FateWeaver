@@ -23,13 +23,13 @@ export function findCharacterLocation(
  * params[0]: CharacterId
  * params[1]: number
  */
-export function evalParanoiaGreaterThan(
+export function evalParanoiaGreaterThanOrEqualTo(
   params: any[],
   boardState: BoardState
 ): boolean {
   const charId = params[0] as CharacterId;
   const threshold = params[1] as number;
-  return boardState.characterStats[charId].paranoia > threshold;
+  return boardState.characterStats[charId].paranoia >= threshold;
 }
 
 /**
@@ -37,17 +37,17 @@ export function evalParanoiaGreaterThan(
  * params[0]: Target (CharacterId 或 LocationId)
  * params[1]: number
  */
-export function evalIntrigueGreaterThan(
+export function evalIntrigueGreaterThanOrEqualTo(
   params: any[],
   boardState: BoardState
 ): boolean {
   const target = params[0] as CharacterId | LocationId;
   const threshold = params[1] as number;
   if (ALL_LOCATIONS.includes(target as LocationId)) {
-    return boardState.locations[target as LocationId].intrigue > threshold;
+    return boardState.locations[target as LocationId].intrigue >= threshold;
   } else {
     return (
-      boardState.characterStats[target as CharacterId].intrigue > threshold
+      boardState.characterStats[target as CharacterId].intrigue >= threshold
     );
   }
 }
@@ -57,13 +57,13 @@ export function evalIntrigueGreaterThan(
  * params[0]: CharacterId
  * params[1]: number
  */
-export function evalGoodwillGreaterThan(
+export function evalGoodwillGreaterThanOrEqualTo(
   params: any[],
   boardState: BoardState
 ): boolean {
   const charId = params[0] as CharacterId;
   const threshold = params[1] as number;
-  return boardState.characterStats[charId].goodwill > threshold;
+  return boardState.characterStats[charId].goodwill >= threshold;
 }
 
 /**
@@ -105,7 +105,7 @@ export function evalSomeoneInSameLocationAs(
  *
  * 注：计算同地点的人数时，不包括自身，且只统计存活角色
  */
-export function evalNumberShareLocationGreaterThan(
+export function evalNumberShareLocationGreaterThanOrEqualTo(
   params: any[],
   boardState: BoardState
 ): boolean {
@@ -119,7 +119,7 @@ export function evalNumberShareLocationGreaterThan(
   );
   // 排除自身
   const countAtLoc = aliveChars.filter((id) => id !== charId).length;
-  return countAtLoc > threshold;
+  return countAtLoc >= threshold;
 }
 
 /**
@@ -158,18 +158,18 @@ export const EVALUATORS: Record<
     evalRule: (id: string) => boolean
   ) => boolean
 > = {
-  paranoiaGreaterThan: (params, boardState) =>
-    evalParanoiaGreaterThan(params, boardState),
-  intrigueGreaterThan: (params, boardState) =>
-    evalIntrigueGreaterThan(params, boardState),
-  goodwillGreaterThan: (params, boardState) =>
-    evalGoodwillGreaterThan(params, boardState),
+  paranoiaGreaterThanOrEqualTo: (params, boardState) =>
+    evalParanoiaGreaterThanOrEqualTo(params, boardState),
+  intrigueGreaterThanOrEqualTo: (params, boardState) =>
+    evalIntrigueGreaterThanOrEqualTo(params, boardState),
+  goodwillGreaterThanOrEqualTo: (params, boardState) =>
+    evalGoodwillGreaterThanOrEqualTo(params, boardState),
   someoneInSomewhere: (params, boardState) =>
     evalSomeoneInSomewhere(params, boardState),
   someoneInSameLocationAs: (params, boardState) =>
     evalSomeoneInSameLocationAs(params, boardState),
-  numberShareLocationGreaterThan: (params, boardState) =>
-    evalNumberShareLocationGreaterThan(params, boardState),
+  numberShareLocationGreaterThanOrEqualTo: (params, boardState) =>
+    evalNumberShareLocationGreaterThanOrEqualTo(params, boardState),
   numberShareLocationEquals: (params, boardState) =>
     evalNumberShareLocationEquals(params, boardState),
   and: (params, boardState, evalRule) => {

@@ -2,13 +2,13 @@
  * 基本效用规则的类型
  */
 export type UtilityRuleType =
-  | 'paranoiaGreaterThan'
+  | 'paranoiaGreaterThanOrEqualTo'
   | 'someoneInSomewhere'
-  | 'intrigueGreaterThan'
+  | 'intrigueGreaterThanOrEqualTo'
   | 'someoneInSameLocationAs'
-  | 'numberShareLocationGreaterThan'
+  | 'numberShareLocationGreaterThanOrEqualTo'
   | 'numberShareLocationEquals'
-  | 'goodwillGreaterThan'
+  | 'goodwillGreaterThanOrEqualTo'
   | 'and'
   | 'or'
   | 'not';
@@ -25,16 +25,16 @@ interface UtilityRuleDefinition {
  * 所有可用的基本效用规则及逻辑组合规则
  */
 export const UTILITY_RULES: Record<UtilityRuleType, UtilityRuleDefinition> = {
-  paranoiaGreaterThan: {
-    text: '? 的不安大于 ?',
+  paranoiaGreaterThanOrEqualTo: {
+    text: '? 的不安大于等于 ?',
     params: ['Character', 'Number'],
   },
-  intrigueGreaterThan: {
-    text: '? 的密谋大于 ?',
+  intrigueGreaterThanOrEqualTo: {
+    text: '? 的密谋大于等于 ?',
     params: ['Target', 'Number'],
   },
-  goodwillGreaterThan: {
-    text: '? 的友好大于 ?',
+  goodwillGreaterThanOrEqualTo: {
+    text: '? 的友好大于等于 ?',
     params: ['Character', 'Number'],
   },
   someoneInSomewhere: {
@@ -45,8 +45,8 @@ export const UTILITY_RULES: Record<UtilityRuleType, UtilityRuleDefinition> = {
     text: '? 与 ? 处于同一地点',
     params: ['Character', 'Character'],
   },
-  numberShareLocationGreaterThan: {
-    text: '与 ? 处于同一地点的人数（不包括自身）大于',
+  numberShareLocationGreaterThanOrEqualTo: {
+    text: '与 ? 处于同一地点的人数（不包括自身）大于等于',
     params: ['Character', 'Number'],
   },
   numberShareLocationEquals: {
