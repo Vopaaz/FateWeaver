@@ -132,6 +132,9 @@ const boardSlice = createSlice({
         state.locations[locationId].intrigue - 1
       );
     },
+    setBoardState(state, action: PayloadAction<BoardState>) {
+      return action.payload;
+    },
   },
 });
 
@@ -144,5 +147,6 @@ export const {
   setLocationIntrigue,
   incrementLocationIntrigue,
   decrementLocationIntrigue,
+  setBoardState,
 } = boardSlice.actions;
 export default boardSlice.reducer;

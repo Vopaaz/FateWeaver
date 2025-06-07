@@ -27,7 +27,8 @@ export type CharacterId =
   | "Nurse"
   | "Henchman"
   | "IdentificationOfficer"
-  | "ArmyMan";
+  | "ArmyMan"
+  | "UnlockedPatient";
 
 export const CHARACTERS_I18N: Record<CharacterId, string> = {
   BoyStudent: "男学生",
@@ -50,5 +51,6 @@ export const CHARACTERS_I18N: Record<CharacterId, string> = {
   Henchman: "手下",
   IdentificationOfficer: "鉴别员",
   ArmyMan: "军人",
+  UnlockedPatient: "已康复患者"
 };
 export const ALL_CHARACTERS = Object.keys(CHARACTERS_I18N) as CharacterId[];

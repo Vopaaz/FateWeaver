@@ -1,11 +1,8 @@
 // src/store/utilitySlice.ts
 
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { v4 as uuidv4 } from 'uuid';
-import {
-  UtilityRuleType,
-  UTILITY_RULES,
-} from '../constants/utilityRules';
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { v4 as uuidv4 } from "uuid";
+import { UtilityRuleType, UTILITY_RULES } from "../constants/utilityRules";
 
 /**
  * UtilityParamValue 可以是字符串（角色/地点/规则 ID）或数字
@@ -19,7 +16,7 @@ export type UtilityParamValue = string | number;
 export interface UtilityItem {
   id: string;
   alias: string;
-  type: UtilityRuleType | '';
+  type: UtilityRuleType | "";
   params: UtilityParamValue[];
   isValid: boolean;
 }
@@ -62,15 +59,11 @@ function checkRuleValidity(
   for (let idx = 0; idx < def.params.length; idx++) {
     const ptype = def.params[idx];
     const val = item.params[idx];
-    if (
-      ptype === 'Character' ||
-      ptype === 'Location' ||
-      ptype === 'Target'
-    ) {
-      if (!val || String(val).trim() === '') return false;
+    if (ptype === "Character" || ptype === "Location" || ptype === "Target") {
+      if (!val || String(val).trim() === "") return false;
     }
-    if (ptype === 'Rule') {
-      const rid = String(val || '');
+    if (ptype === "Rule") {
+      const rid = String(val || "");
       if (!rid) return false;
       // 引用的规则必须存在且本身有效
       if (!checkRuleValidity(items, rid, visiting)) return false;
@@ -102,15 +95,15 @@ function recalcValidity(state: UtilityState) {
 }
 
 const utilitySlice = createSlice({
-  name: 'utility',
+  name: "utility",
   initialState,
   reducers: {
     /** 添加一条新规则，默认 isValid=false */
     addUtility(state) {
       const newItem: UtilityItem = {
         id: uuidv4(),
-        alias: '',
-        type: '',
+        alias: "",
+        type: "",
         params: [],
         isValid: false,
       };
@@ -133,8 +126,8 @@ const utilitySlice = createSlice({
         if (!item.type) return;
         const def = UTILITY_RULES[item.type];
         def.params.forEach((ptype, idx) => {
-          if (ptype === 'Rule' && item.params[idx] === removedId) {
-            item.params[idx] = '';
+          if (ptype === "Rule" && item.params[idx] === removedId) {
+            item.params[idx] = "";
           }
         });
       });
@@ -142,7 +135,7 @@ const utilitySlice = createSlice({
       // 步骤2：清理所有 “效用值” 对 removedId 的引用
       state.values.forEach((v) => {
         if (v.ruleId === removedId) {
-          v.ruleId = '';
+          v.ruleId = "";
         }
       });
 
@@ -177,9 +170,7 @@ const utilitySlice = createSlice({
       if (!item) return;
       item.type = type;
       const def = UTILITY_RULES[type];
-      item.params = def.params.map((ptype) =>
-        ptype === 'Number' ? 0 : ''
-      );
+      item.params = def.params.map((ptype) => (ptype === "Number" ? 0 : ""));
       recalcValidity(state);
     },
     /**
@@ -198,7 +189,7 @@ const utilitySlice = createSlice({
       const item = state.items.find((u) => u.id === id);
       if (!item) return;
       if (index < 0 || index >= item.params.length) return;
-      if (typeof value === 'number' && value < 0) {
+      if (typeof value === "number" && value < 0) {
         item.params[index] = 0;
       } else {
         item.params[index] = value;
@@ -209,7 +200,7 @@ const utilitySlice = createSlice({
     addValue(state) {
       const newVal: ValueDefinition = {
         id: uuidv4(),
-        ruleId: '',
+        ruleId: "",
         value: 0,
         isValid: false,
       };
@@ -224,10 +215,7 @@ const utilitySlice = createSlice({
     /**
      * 设置某条效用值引用的 ruleId
      */
-    setValueRule(
-      state,
-      action: PayloadAction<{ id: string; ruleId: string }>
-    ) {
+    setValueRule(state, action: PayloadAction<{ id: string; ruleId: string }>) {
       const { id, ruleId } = action.payload;
       const valDef = state.values.find((v) => v.id === id);
       if (valDef) {
@@ -250,6 +238,21 @@ const utilitySlice = createSlice({
       // 数值改动本身不影响 isValid，但仍然 recalcValidity 保持一致
       recalcValidity(state);
     },
+
+    /** ===== 新增：一次性导入整组 UtilityItem ===== */
+    importUtilities(state, action: PayloadAction<UtilityItem[]>) {
+      state.items = action.payload;
+    },
+    /** ===== 新增：一次性导入整组 ValueDefinition ===== */
+    importValues(state, action: PayloadAction<ValueDefinition[]>) {
+      state.values = action.payload;
+    },
+    clearUtilities(state) {
+      state.items = [];
+    },
+    clearValues(state) {
+      state.values = [];
+    },
   },
 });
 
@@ -263,6 +266,10 @@ export const {
   removeValue,
   setValueRule,
   setValueNumber,
+  importUtilities,
+  importValues,
+  clearUtilities,
+  clearValues,
 } = utilitySlice.actions;
 
 export const selectUtilities = (state: { utility: UtilityState }) =>

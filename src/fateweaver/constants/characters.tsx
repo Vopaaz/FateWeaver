@@ -27,4 +27,5 @@ export const FORBIDDEN_AREAS: Record<CharacterId, LocationId[]> = {
   Henchman: [],
   IdentificationOfficer: [],
   ArmyMan: [],
+  UnlockedPatient: []
 };

@@ -46,7 +46,9 @@ export function evalIntrigueGreaterThan(
   if (ALL_LOCATIONS.includes(target as LocationId)) {
     return boardState.locations[target as LocationId].intrigue > threshold;
   } else {
-    return boardState.characterStats[target as CharacterId].intrigue > threshold;
+    return (
+      boardState.characterStats[target as CharacterId].intrigue > threshold
+    );
   }
 }
 
@@ -101,7 +103,7 @@ export function evalSomeoneInSameLocationAs(
  * params[0]: CharacterId
  * params[1]: number
  *
- * 注：计算同地点的人数时，不包括自身
+ * 注：计算同地点的人数时，不包括自身，且只统计存活角色
  */
 export function evalNumberShareLocationGreaterThan(
   params: any[],
@@ -111,7 +113,12 @@ export function evalNumberShareLocationGreaterThan(
   const threshold = params[1] as number;
   const loc = findCharacterLocation(charId, boardState);
   if (!loc) return false;
-  const countAtLoc = boardState.locations[loc].characters.length - 1;
+  // 只统计存活的角色
+  const aliveChars = boardState.locations[loc].characters.filter(
+    (id) => boardState.characterStats[id].alive
+  );
+  // 排除自身
+  const countAtLoc = aliveChars.filter((id) => id !== charId).length;
   return countAtLoc > threshold;
 }
 
@@ -120,7 +127,7 @@ export function evalNumberShareLocationGreaterThan(
  * params[0]: CharacterId
  * params[1]: number
  *
- * 注：计算同地点的人数时，不包括自身
+ * 注：计算同地点的人数时，不包括自身，且只统计存活角色
  */
 export function evalNumberShareLocationEquals(
   params: any[],
@@ -130,7 +137,12 @@ export function evalNumberShareLocationEquals(
   const targetNumber = params[1] as number;
   const loc = findCharacterLocation(charId, boardState);
   if (!loc) return false;
-  const countAtLoc = boardState.locations[loc].characters.length - 1;
+  // 只统计存活的角色
+  const aliveChars = boardState.locations[loc].characters.filter(
+    (id) => boardState.characterStats[id].alive
+  );
+  // 排除自身
+  const countAtLoc = aliveChars.filter((id) => id !== charId).length;
   return countAtLoc === targetNumber;
 }
 
@@ -140,7 +152,11 @@ export function evalNumberShareLocationEquals(
  */
 export const EVALUATORS: Record<
   string,
-  (params: any[], boardState: BoardState, evalRule: (id: string) => boolean) => boolean
+  (
+    params: any[],
+    boardState: BoardState,
+    evalRule: (id: string) => boolean
+  ) => boolean
 > = {
   paranoiaGreaterThan: (params, boardState) =>
     evalParanoiaGreaterThan(params, boardState),

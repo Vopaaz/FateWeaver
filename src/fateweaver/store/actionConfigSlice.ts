@@ -1,34 +1,33 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import {
   MastermindActionId,
   ALL_MASTERMIND_ACTIONS,
   ProtagonistActionId,
   ALL_PROTAGONIST_ACTIONS,
-} from '../constants/actions';
-import {
-  LocationId,
-  CharacterId,
-  ALL_LOCATIONS,
-} from '../constants/board';
-import { addCharacter, removeCharacter } from './boardSlice';
-import type { RootState } from './store';
+} from "../constants/actions";
+import { LocationId, CharacterId, ALL_LOCATIONS } from "../constants/board";
+import { addCharacter, removeCharacter } from "./boardSlice";
+import type { RootState } from "./store";
 
-interface ActionConfigState {
+export interface ActionConfigState {
   mastermindConfig: Record<MastermindActionId, number>;
   protagonistConfig: Record<ProtagonistActionId, number>;
   mastermindScope: Record<MastermindActionId, Array<LocationId | CharacterId>>;
-  protagonistScope: Record<ProtagonistActionId, Array<LocationId | CharacterId>>;
+  protagonistScope: Record<
+    ProtagonistActionId,
+    Array<LocationId | CharacterId>
+  >;
 }
 
 const initialMastermindConfig: Record<MastermindActionId, number> =
   ALL_MASTERMIND_ACTIONS.reduce((acc, id) => {
-    acc[id] = (id === 'GainParanoia' || id === 'UselessLocationCover') ? 2 : 1;
+    acc[id] = id === "GainParanoia" || id === "UselessLocationCover" ? 2 : 1;
     return acc;
   }, {} as Record<MastermindActionId, number>);
 
 const initialProtagonistConfig: Record<ProtagonistActionId, number> =
   ALL_PROTAGONIST_ACTIONS.reduce((acc, id) => {
-    acc[id] = id === 'ForbidIntrigue' ? 1 : 3;
+    acc[id] = id === "ForbidIntrigue" ? 1 : 3;
     return acc;
   }, {} as Record<ProtagonistActionId, number>);
 
@@ -39,9 +38,9 @@ const initialScopeMastermind: Record<
   Array<LocationId | CharacterId>
 > = ALL_MASTERMIND_ACTIONS.reduce((acc, id) => {
   if (
-    id === 'UselessLocationCover' ||
-    id === 'GainIntrigue' ||
-    id === 'GainIntrigue2'
+    id === "UselessLocationCover" ||
+    id === "GainIntrigue" ||
+    id === "GainIntrigue2"
   ) {
     acc[id] = [...ALL_LOCATIONS];
   } else {
@@ -55,7 +54,7 @@ const initialScopeProtagonist: Record<
   ProtagonistActionId,
   Array<LocationId | CharacterId>
 > = ALL_PROTAGONIST_ACTIONS.reduce((acc, id) => {
-  acc[id] = id === 'ForbidIntrigue' ? [...ALL_LOCATIONS] : [];
+  acc[id] = id === "ForbidIntrigue" ? [...ALL_LOCATIONS] : [];
   return acc;
 }, {} as Record<ProtagonistActionId, Array<LocationId | CharacterId>>);
 
@@ -67,26 +66,22 @@ const initialState: ActionConfigState = {
 };
 
 const actionConfigSlice = createSlice({
-  name: 'actionConfig',
+  name: "actionConfig",
   initialState,
   reducers: {
     toggleMastermindAction(state, action: PayloadAction<MastermindActionId>) {
       const id = action.payload;
-      if (id === 'GainParanoia') return;
-      state.mastermindConfig[id] =
-        state.mastermindConfig[id] === 1 ? 0 : 1;
+      if (id === "GainParanoia") return;
+      state.mastermindConfig[id] = state.mastermindConfig[id] === 1 ? 0 : 1;
     },
     setGainParanoiaCount(state, action: PayloadAction<number>) {
       const count = action.payload;
-      state.mastermindConfig['GainParanoia'] = Math.max(
-        0,
-        Math.min(2, count)
-      );
+      state.mastermindConfig["GainParanoia"] = Math.max(0, Math.min(2, count));
     },
     // 新增：地点伪装数量
     setUselessLocationCoverCount(state, action: PayloadAction<number>) {
       const count = action.payload;
-      state.mastermindConfig['UselessLocationCover'] = Math.max(
+      state.mastermindConfig["UselessLocationCover"] = Math.max(
         0,
         Math.min(2, count)
       );
@@ -96,11 +91,8 @@ const actionConfigSlice = createSlice({
       action: PayloadAction<{ actionId: ProtagonistActionId; count: number }>
     ) {
       const { actionId, count } = action.payload;
-      const max = actionId === 'ForbidIntrigue' ? 1 : 3;
-      state.protagonistConfig[actionId] = Math.max(
-        0,
-        Math.min(max, count)
-      );
+      const max = actionId === "ForbidIntrigue" ? 1 : 3;
+      state.protagonistConfig[actionId] = Math.max(0, Math.min(max, count));
     },
     setMastermindScope(
       state,
@@ -122,32 +114,35 @@ const actionConfigSlice = createSlice({
       const { actionId, targets } = action.payload;
       state.protagonistScope[actionId] = targets;
     },
+    setActionConfig(state, action: PayloadAction<ActionConfigState>) {
+      return action.payload;
+    },
   },
-  extraReducers: builder => {
+  extraReducers: (builder) => {
     builder.addCase(addCharacter, (state, action) => {
       const charId = action.payload.characterId;
-      ALL_MASTERMIND_ACTIONS.forEach(id => {
-        if (id !== 'UselessLocationCover') {
+      ALL_MASTERMIND_ACTIONS.forEach((id) => {
+        if (id !== "UselessLocationCover") {
           const arr = state.mastermindScope[id];
           if (!arr.includes(charId)) arr.push(charId);
         }
       });
-      ALL_PROTAGONIST_ACTIONS.forEach(id => {
+      ALL_PROTAGONIST_ACTIONS.forEach((id) => {
         const arr = state.protagonistScope[id];
         if (!arr.includes(charId)) arr.push(charId);
       });
     });
     builder.addCase(removeCharacter, (state, action) => {
       const removed = action.payload.characterId;
-      ALL_MASTERMIND_ACTIONS.forEach(id => {
-        state.mastermindScope[id] = state.mastermindScope[
-          id
-        ].filter(t => t !== removed);
+      ALL_MASTERMIND_ACTIONS.forEach((id) => {
+        state.mastermindScope[id] = state.mastermindScope[id].filter(
+          (t) => t !== removed
+        );
       });
-      ALL_PROTAGONIST_ACTIONS.forEach(id => {
-        state.protagonistScope[id] = state.protagonistScope[
-          id
-        ].filter(t => t !== removed);
+      ALL_PROTAGONIST_ACTIONS.forEach((id) => {
+        state.protagonistScope[id] = state.protagonistScope[id].filter(
+          (t) => t !== removed
+        );
       });
     });
   },
@@ -160,6 +155,7 @@ export const {
   setProtagonistActionCount,
   setMastermindScope,
   setProtagonistScope,
+  setActionConfig
 } = actionConfigSlice.actions;
 
 export const selectMastermindConfig = (state: RootState) =>
